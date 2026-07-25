@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
+
+class Order extends Model
+{
+    protected $guarded = ['id'];
+
+    protected $casts = [
+        'scheduled_at' => 'datetime',
+        'accepted_at' => 'datetime',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'lat' => 'float',
+        'lng' => 'float',
+    ];
+
+    /** Batas akhir pembayaran: jendela setelah diterima terapis, tak pernah melewati jadwal. */
+    public function paymentDeadline(): ?Carbon
+    {
+        if ($this->accepted_at === null) {
+            return null;
+        }
+
+        return $this->accepted_at->copy()
+            ->addHours((int) config('goterapis.payment_window_hours'))
+            ->min($this->scheduled_at);
+    }
+
+    /** Sudah diterima terapis tapi lewat batas bayar. */
+    public function paymentExpired(): bool
+    {
+        return $this->status === 'pending_payment' && $this->paymentDeadline()?->isPast() === true;
+    }
+
+    /**
+     * Batalkan pesanan yang tak kunjung dibayar agar slot terapis terlepas.
+     * Belum ada dana masuk pada tahap ini, jadi tidak ada yang perlu dikembalikan.
+     *
+     * @return int jumlah pesanan yang dibatalkan
+     */
+    public static function expireUnpaid(): int
+    {
+        $window = (int) config('goterapis.payment_window_hours');
+
+        return static::where('status', 'pending_payment')
+            ->whereNotNull('accepted_at')
+            ->where(fn ($q) => $q
+                ->where('accepted_at', '<=', now()->subHours($window))
+                ->orWhere('scheduled_at', '<=', now()))
+            ->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancel_reason' => 'Pembayaran tidak diselesaikan sampai batas waktu.',
+            ]);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function therapistProfile(): BelongsTo
+    {
+        return $this->belongsTo(TherapistProfile::class);
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class);
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+}

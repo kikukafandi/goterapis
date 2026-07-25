@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+
+@theme {
+    /* Tipografi — satu keluarga solid & konsisten */
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    /* Serif redaksional — khusus halaman baca Jurnal */
+    --font-serif: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+
+    /* Palet herbal — blok warna datar, tanpa gradasi */
+    --color-daun: #2e5a39;        /* hijau daun — brand utama */
+    --color-daun-tua: #234a2e;    /* hijau tua — hover/tekan */
+    --color-daun-muda: #e7efe6;   /* tint lembut — chip, badge, latar seksi */
+    --color-kunyit: #d99a2b;      /* turmeric — aksen tunggal */
+    --color-kunyit-muda: #f6ecd4;
+    --color-jahe: #b65c36;        /* clay hangat — dipakai hemat */
+    --color-kertas: #f7f7f1;      /* latar kertas hangat */
+    --color-arang: #1e241f;       /* teks utama */
+    --color-kabut: #5e6b60;       /* teks sekunder */
+    --color-garis: #e4e7df;       /* garis/border */
+
+    --radius-card: 1.25rem;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        background-color: var(--color-kertas);
+        color: var(--color-arang);
+        -webkit-font-smoothing: antialiased;
+    }
+    ::selection {
+        background: var(--color-daun);
+        color: #fff;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
+}
+
+@layer components {
+    /* Judul: Poppins tebal, tracking rapat supaya solid & tegas */
+    .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+    /* Chip layanan */
+    .chip {
+        display: inline-flex; align-items: center; gap: .375rem;
+        padding: .25rem .625rem; border-radius: 9999px;
+        font-size: .75rem; font-weight: 600; line-height: 1;
+        background: var(--color-daun-muda); color: var(--color-daun-tua);
+    }
+}
