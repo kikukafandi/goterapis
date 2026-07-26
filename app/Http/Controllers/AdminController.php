@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\PromotionBanner;
 use App\Models\Report;
 use App\Models\TherapistDocument;
 use App\Models\TherapistProfile;
@@ -18,6 +20,8 @@ class AdminController extends Controller
             'therapists' => TherapistProfile::count(),
             'pending_docs' => TherapistDocument::where('status', 'pending')->count(),
             'orders' => Order::count(),
+            'products' => Product::count(),
+            'active_banners' => PromotionBanner::visible()->count(),
             'open_reports' => Report::where('status', 'open')->count(),
         ];
 

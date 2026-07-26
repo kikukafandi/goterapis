@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="mx-auto max-w-2xl px-4 pb-28 pt-6">
-    <h1 class="font-display text-2xl font-bold text-arang">Akun</h1>
+    <h1 class="font-display text-2xl font-bold text-arang">Akun saya</h1>
 
     <div class="mt-5 rounded-card border border-garis bg-white p-5 sm:p-6">
         <div class="flex items-center gap-4">

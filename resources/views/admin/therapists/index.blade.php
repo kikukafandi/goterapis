@@ -38,7 +38,7 @@
             <x-icon name="arrow-right" class="h-4 w-4 text-kabut" />
         </a>
     @empty
-        <p class="px-4 py-10 text-center text-sm text-kabut">Tidak ada terapis yang cocok.</p>
+        <p class="px-4 py-10 text-center text-sm text-kabut">Tidak ada terapis yang sesuai dengan pencarian atau filter ini.</p>
     @endforelse
 </div>
 

@@ -97,9 +97,11 @@ class OrderController extends Controller
         if ($order->user_id !== $request->user()->id) {
             return redirect()->route('pesanan.index')->with('error', 'Pesanan tidak ditemukan.');
         }
+        $order->messages()->whereNull('read_at')->where('sender_id', '!=', $request->user()->id)->update(['read_at' => now()]);
         $order->load(['therapistProfile.user', 'service', 'payment', 'review']);
+        $messages = $order->messages()->with('sender')->latest()->limit(50)->get()->reverse()->values();
 
-        return view('pesanan.show', compact('order'));
+        return view('pesanan.show', compact('order', 'messages'));
     }
 
     /** Pelanggan membatalkan pesanan (sebelum layanan berjalan). */

@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-4 flex items-center justify-between">
-    <p class="text-sm text-kabut">Kelola artikel & tulisan untuk pembaca.</p>
+    <p class="text-sm text-kabut">Kelola artikel yang ditampilkan kepada pembaca.</p>
     <a href="{{ route('admin.articles.create') }}"
        class="rounded-full bg-daun px-4 py-2 text-sm font-semibold text-white hover:bg-daun-tua">
         Tulis artikel

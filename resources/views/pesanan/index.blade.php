@@ -37,8 +37,8 @@
             </a>
         @empty
             <div class="rounded-card border border-garis bg-white p-8 text-center">
-                <p class="text-sm text-kabut">Belum ada pesanan.</p>
-                <a href="{{ route('cari') }}" class="mt-3 inline-block rounded-full bg-daun px-5 py-2.5 text-sm font-semibold text-white hover:bg-daun-tua">Cari terapis</a>
+                <p class="text-sm text-kabut">Pesananmu akan tersimpan di sini setelah kamu memilih layanan.</p>
+                <a href="{{ route('cari') }}" class="mt-3 inline-block rounded-full bg-daun px-5 py-2.5 text-sm font-semibold text-white hover:bg-daun-tua">Temukan terapis</a>
             </div>
         @endforelse
     </div>

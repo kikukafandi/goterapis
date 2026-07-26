@@ -16,10 +16,10 @@
 
         <div class="absolute bottom-10 left-10 right-10 text-white">
             <p class="font-display text-3xl font-semibold">
-                Satu akun untuk semua terapis.
+                Pesan terapis lebih praktis.
             </p>
             <p class="mt-2 max-w-sm text-white/85">
-                Cari, pesan, dan bayar dengan aman.
+                Cari, pesan, dan bayar melalui GoTerapis.
             </p>
         </div>
     </div>

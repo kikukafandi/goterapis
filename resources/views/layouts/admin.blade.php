@@ -15,6 +15,8 @@
         ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'icon' => 'home', 'active' => request()->routeIs('admin.dashboard')],
         ['label' => 'Verifikasi Terapis', 'href' => route('admin.therapists'), 'icon' => 'shield', 'active' => request()->routeIs('admin.therapist*')],
         ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'icon' => 'clipboard', 'active' => request()->routeIs('admin.articles.*')],
+        ['label' => 'Produk', 'href' => route('admin.products.index'), 'icon' => 'leaf', 'active' => request()->routeIs('admin.products.*')],
+        ['label' => 'Banner Promosi', 'href' => route('admin.banners.index'), 'icon' => 'image', 'active' => request()->routeIs('admin.banners.*')],
     ];
 @endphp
 

@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(ServiceSeeder::class);
+        $this->call([ServiceSeeder::class, ProductSeeder::class]);
 
         User::updateOrCreate(
             ['email' => 'admin@goterapis.test'],

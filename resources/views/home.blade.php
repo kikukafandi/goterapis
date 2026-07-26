@@ -5,11 +5,11 @@
     $q = '?auto=format&fit=crop&q=70';
 
     $categories = [
-        ['slug' => 'pijat', 'label' => 'Pijat', 'desc' => 'Relaksasi & Kebugaran'],
-        ['slug' => 'bekam', 'label' => 'Bekam', 'desc' => 'Detoks & Sirkulasi Tubuh'],
-        ['slug' => 'kretek', 'label' => 'Kretek', 'desc' => 'Pelemasan & Perbaikan Postur'],
-        ['slug' => 'refleksi', 'label' => 'Refleksi', 'desc' => 'Seimbangkan Titik Energi'],
-        ['slug' => 'lainnya', 'label' => 'Kerik & Totok', 'desc' => 'Melancarkan & Meredakan'],
+        ['slug' => 'pijat', 'label' => 'Pijat', 'desc' => 'Relaksasi dan kebugaran'],
+        ['slug' => 'bekam', 'label' => 'Bekam', 'desc' => 'Perawatan tradisional'],
+        ['slug' => 'kretek', 'label' => 'Kretek', 'desc' => 'Peregangan tubuh'],
+        ['slug' => 'refleksi', 'label' => 'Refleksi', 'desc' => 'Pijat kaki dan tangan'],
+        ['slug' => 'lainnya', 'label' => 'Kerik & Totok', 'desc' => 'Pilihan perawatan lainnya'],
     ];
 
     // Jenjang verifikasi — elemen signature (segel-daun).
@@ -61,7 +61,7 @@
     ];
     // Belum ada traksi nyata → tampilkan janji/kepercayaan, bukan angka palsu.
     $pillars = [
-        ['shield', 'Identitas diperiksa', 'KTP, sertifikat & rekening diverifikasi admin'],
+        ['shield', 'Identitas diperiksa', 'Dokumen yang diajukan diperiksa admin'],
         ['wallet', 'Harga transparan', 'Tarif tampil jelas sebelum kamu pesan'],
         ['leaf', 'Bayar aman', 'Dana ditahan sampai layanan selesai'],
         ['pin', 'Terapis lokal', 'Cari yang terdekat di sekitarmu'],
@@ -96,8 +96,8 @@
                 Temukan terapis<br>di <span class="text-kunyit">sekitarmu.</span>
             </h1>
             <p class="mt-4 max-w-lg text-base text-white/85 sm:text-lg">
-                Pijat, bekam, kretek, dan refleksi dari terapis yang identitas serta
-                pengalamannya diperiksa. Harga jelas, jadwal fleksibel, pembayaran aman.
+                Bandingkan layanan, harga, dan ulasan terapis pijat, bekam, kretek, serta refleksi.
+                Pilih jadwal yang sesuai, lalu pesan melalui GoTerapis.
             </p>
 
             {{-- Search hero (card putih) — versi ringkas muncul di navbar saat tergulir --}}
@@ -211,7 +211,7 @@
                 </h2>
 
                 <p class="mt-3 max-w-xl text-sm leading-6 text-kabut sm:text-base">
-                    Profil pilihan dengan identitas, pengalaman, dan layanan yang telah diperiksa.
+                    Profil pilihan berdasarkan status verifikasi, informasi layanan, dan ulasan.
                 </p>
             </div>
 
@@ -534,7 +534,7 @@
         <div class="flex items-end justify-between gap-4">
             <div>
                 <span class="chip">Cerita pengguna</span>
-                <h2 class="mt-3 font-display text-3xl font-bold text-arang sm:text-4xl">Dipakai ribuan keluarga</h2>
+                <h2 class="mt-3 font-display text-3xl font-bold text-arang sm:text-4xl">Pengalaman memesan lewat GoTerapis</h2>
             </div>
             <div class="hidden items-center gap-1.5 sm:flex">
                 <svg viewBox="0 0 24 24" class="h-5 w-5 text-kunyit" fill="currentColor"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.3l6.1-.7z"/></svg>
@@ -571,7 +571,7 @@
     <div class="mt-6 divide-y divide-garis rounded-card border border-garis bg-white" x-data="{ open: 0 }">
         @foreach ([
             ['Apakah pembayaran aman?', 'Dana kamu ditahan platform dan baru diteruskan ke terapis setelah kamu mengonfirmasi layanan selesai.'],
-            ['Bagaimana terapis diperiksa?', 'Admin memeriksa KTP, foto, nomor telepon, rekening, serta sertifikat pelatihan dan pengalaman sebelum status verifikasi diberikan.'],
+            ['Bagaimana terapis diperiksa?', 'Admin meninjau dokumen yang diajukan terapis sebelum memberikan status verifikasi yang sesuai.'],
             ['Bisa panggil ke rumah?', 'Bisa. Terapis panggilan datang ke lokasimu sesuai wilayah layanan; ada juga terapis yang menerima di tempat praktik.'],
             ['Apakah ini layanan medis?', 'Bukan. GoTerapis adalah layanan kebugaran dan terapi tradisional, bukan pengganti dokter atau klinik.'],
         ] as $i => $f)

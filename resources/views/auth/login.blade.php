@@ -16,7 +16,7 @@
 
         <div class="absolute bottom-10 left-10 right-10 text-white">
             <p class="font-display text-3xl font-semibold">
-                Temukan terapis di sekitarmu.
+                Lanjutkan pesananmu dengan mudah.
             </p>
             <p class="mt-2 max-w-sm text-white/85">
                 Terpercaya, transparan, dan tercatat.

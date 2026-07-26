@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 
 class Order extends Model
@@ -62,6 +63,12 @@ class Order extends Model
             ]);
     }
 
+    public function hasParticipant(Authenticatable $user): bool
+    {
+        return $this->user_id === $user->getAuthIdentifier()
+            || $this->therapistProfile()->where('user_id', $user->getAuthIdentifier())->exists();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -85,6 +92,11 @@ class Order extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class);
+    }
+
+    public function latestMessage(): HasOne
+    {
+        return $this->hasOne(ChatMessage::class)->latestOfMany();
     }
 
     public function review(): HasOne

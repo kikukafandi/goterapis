@@ -20,7 +20,7 @@
 @section('content')
 <div class="mx-auto max-w-2xl px-4 pb-28 pt-6">
     <h1 class="font-display text-2xl font-bold text-arang">Pesanan masuk</h1>
-    <p class="mt-1 text-sm text-kabut">Terima atau tolak pesanan dari pelanggan.</p>
+    <p class="mt-1 text-sm text-kabut">Tinjau jadwal dan detail pelanggan sebelum menerima atau menolak pesanan.</p>
 
     <div class="mt-6 space-y-3">
         @forelse ($orders as $order)
@@ -46,6 +46,10 @@
                     @endif
                     <div class="flex justify-between gap-4"><dt class="text-kabut">Bagianmu</dt><dd class="text-right font-bold text-daun">Rp{{ number_format($order->payout, 0, ',', '.') }}</dd></div>
                 </dl>
+
+                <a href="{{ route('mitra.pesanan.show', $order) }}" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">
+                    Lihat detail dan percakapan <span aria-hidden="true">→</span>
+                </a>
 
                 @if (in_array($order->status, $actionable, true))
                     <div class="mt-4 flex gap-2">

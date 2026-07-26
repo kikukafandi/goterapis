@@ -4,8 +4,8 @@
             <div class="max-w-xs">
                 <p class="font-display text-lg font-semibold text-daun">GoTerapis</p>
                 <p class="mt-2 text-sm text-kabut">
-                    Temukan terapis pijat, bekam, kretek, dan refleksi di sekitarmu.
-                    Terpercaya, transparan, dan tercatat.
+                    Bandingkan layanan, harga, dan ulasan terapis di sekitarmu.
+                    Pilih jadwal yang sesuai, lalu pesan melalui GoTerapis.
                 </p>
             </div>
             <div>
@@ -22,6 +22,7 @@
                 <ul class="mt-3 space-y-2 text-sm text-arang/80">
                     <li><a class="hover:text-daun" href="/daftar-terapis">Gabung komunitas</a></li>
                     <li><a class="hover:text-daun" href="{{ route('artikel.index') }}">Info Sehat</a></li>
+                    <li><a class="hover:text-daun" href="{{ route('products.index') }}">Toko</a></li>
                     <li><a class="hover:text-daun" href="#verifikasi">Status verifikasi</a></li>
                     <li><a class="hover:text-daun" href="#cara-kerja">Cara kerja</a></li>
                 </ul>

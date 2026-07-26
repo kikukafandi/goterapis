@@ -27,7 +27,7 @@
                 <button type="button" @click="cari = !cari"
                         class="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas"
                         :class="cari && 'bg-kertas'">
-                    Cari Terapis
+                    Cari terapis
                     <x-icon name="chevron-down" class="h-4 w-4 transition-transform" ::class="cari && 'rotate-180'" />
                 </button>
 
@@ -57,6 +57,7 @@
             </div>
 
             <a href="{{ route('artikel.index') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Info Sehat</a>
+            <a href="{{ route('products.index') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Toko</a>
             <a href="/#cara-kerja" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Cara Kerja</a>
             <a href="/daftar-terapis" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Jadi Terapis</a>
         </nav>
@@ -79,6 +80,9 @@
                 @else
                     <a href="{{ route('pesanan.index') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->is('pesanan*') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Pesanan</a>
                 @endif
+                @if (auth()->user()->role !== 'admin')
+                    <a href="{{ route('chat') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('chat') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Percakapan</a>
+                @endif
                 <a href="{{ route('akun') }}" class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold {{ request()->is('akun') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">
                     <x-icon name="user" class="h-4 w-4" /> {{ auth()->user()->name }}
                 </a>
@@ -97,7 +101,7 @@
             <a href="/cari" aria-label="Cari" class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
                 <x-icon name="search" class="h-5 w-5" />
             </a>
-            <button type="button" @click="mobile = true" aria-label="Menu"
+            <button type="button" @click="mobile = true" aria-label="Menu" aria-controls="menu-mobile" :aria-expanded="mobile"
                     class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
                 <x-icon name="menu" class="h-6 w-6" />
             </button>
@@ -105,15 +109,20 @@
     </div>
 
     {{-- Drawer mobile --}}
-    <div x-show="mobile" x-cloak class="fixed inset-0 z-50 lg:hidden">
-        <div class="absolute inset-0 bg-arang/40" @click="mobile = false" x-transition.opacity></div>
-        <div class="absolute right-0 top-0 flex h-full w-[82%] max-w-sm flex-col bg-white shadow-xl"
-             x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+    <div x-cloak class="fixed inset-0 z-50 lg:hidden" :class="mobile ? 'pointer-events-auto' : 'pointer-events-none'">
+        <div x-show="mobile" class="absolute inset-0 z-0 bg-arang/40 backdrop-blur-sm"
+             @click="mobile = false"
+             x-transition:enter="transition-opacity ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
+        <div x-show="mobile" id="menu-mobile" role="dialog" aria-modal="true" aria-label="Menu navigasi"
+             class="absolute right-0 top-0 z-10 flex h-full w-[82%] max-w-sm flex-col rounded-l-card bg-white shadow-[-12px_0_36px_rgba(30,36,31,.14)] transform-gpu will-change-transform"
+             x-transition:enter="transition-transform ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition-transform ease-in duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+             @click="if ($event.target.closest('a')) mobile = false"
              x-trap.noscroll="mobile">
-            <div class="flex items-center justify-between border-b border-garis px-4 py-3">
+            <div class="flex items-center justify-between border-b border-garis px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))]">
                 <span class="font-display text-lg font-semibold text-daun">Menu</span>
-                <button type="button" @click="mobile = false" aria-label="Tutup" class="grid h-9 w-9 place-items-center rounded-full hover:bg-kertas">
+                <button type="button" @click="mobile = false" aria-label="Tutup" class="grid h-11 w-11 place-items-center rounded-full hover:bg-kertas">
                     <x-icon name="close" class="h-5 w-5" />
                 </button>
             </div>
@@ -132,11 +141,12 @@
                 <div class="mt-4 space-y-1 border-t border-garis pt-4">
                     <a href="/cari" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Semua terapis</a>
                     <a href="{{ route('artikel.index') }}" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Info Sehat</a>
+                    <a href="{{ route('products.index') }}" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Toko</a>
                     <a href="/#cara-kerja" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Cara Kerja</a>
                     <a href="/daftar-terapis" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Jadi Terapis</a>
                 </div>
             </div>
-            <div class="border-t border-garis p-4">
+            <div class="border-t border-garis px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
                 @auth
                     <p class="px-1 pb-2 text-sm text-kabut">Masuk sebagai <span class="font-semibold text-arang">{{ auth()->user()->name }}</span></p>
                     @if (auth()->user()->role === 'admin')
@@ -145,6 +155,9 @@
                         <a href="{{ route('mitra.pesanan') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Pesanan masuk</a>
                     @else
                         <a href="{{ route('pesanan.index') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Pesanan saya</a>
+                    @endif
+                    @if (auth()->user()->role !== 'admin')
+                        <a href="{{ route('chat') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Percakapan</a>
                     @endif
                     <a href="{{ route('akun') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Akun</a>
                     <form method="post" action="{{ route('logout') }}">

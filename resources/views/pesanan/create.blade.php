@@ -28,7 +28,7 @@
     <a href="{{ route('terapis.show', $therapist) }}"
        class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">← Kembali ke profil</a>
 
-    <h1 class="font-display text-2xl font-bold text-arang">Pesan layanan</h1>
+    <h1 class="font-display text-2xl font-bold text-arang">Atur layanan dan jadwal</h1>
     <p class="mt-1 text-sm text-kabut">dengan {{ $therapist->user->name }} · {{ $therapist->city }}</p>
 
     @if ($errors->any())

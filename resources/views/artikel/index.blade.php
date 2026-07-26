@@ -11,7 +11,7 @@
         </div>
         <h1 class="mt-5 font-serif text-4xl font-medium leading-[1.05] tracking-[-0.01em] text-arang sm:text-6xl">Info Sehat</h1>
         <p class="mt-4 font-serif text-lg italic leading-relaxed text-kabut sm:text-xl">
-            Catatan tentang pijat, bekam, dan cara merawat tubuh dengan tradisi yang diwariskan.
+            Panduan praktis tentang pijat, bekam, dan perawatan tubuh tradisional.
         </p>
     </header>
 

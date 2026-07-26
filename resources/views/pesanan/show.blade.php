@@ -37,10 +37,10 @@
         'accepted' => 'Terapis sudah menerima. Siapkan dirimu sesuai jadwal.',
         'in_progress' => 'Layanan sedang berlangsung.',
         'completed' => 'Layanan selesai. Terima kasih! Beri ulasan untuk terapis.',
-        'rejected' => 'Terapis menolak pesanan ini.',
-        'cancelled' => 'Pesanan dibatalkan.',
-        'refunded' => 'Dana telah dikembalikan ke kamu.',
-        'disputed' => 'Pesanan sedang dalam peninjauan admin.',
+        'rejected' => 'Terapis tidak dapat menerima pesanan ini. Kamu bisa mencari terapis lain.',
+        'cancelled' => 'Pesanan ini dibatalkan. Buat pesanan baru jika masih membutuhkan layanan.',
+        'refunded' => 'Pengembalian dana telah diproses.',
+        'disputed' => 'Pesanan sedang ditinjau admin. Pantau halaman ini untuk pembaruan.',
     ];
 @endphp
 
@@ -181,6 +181,10 @@
                 @endforeach
             </ol>
         @endunless
+    </div>
+
+    <div class="mt-5">
+        <x-order-chat :$order :$messages />
     </div>
 
     <div class="mt-5 grid gap-5 lg:grid-cols-2">

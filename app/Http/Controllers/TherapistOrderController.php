@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Support\Geo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -25,6 +26,19 @@ class TherapistOrderController extends Controller
             ->paginate(10);
 
         return view('mitra.pesanan', compact('orders'));
+    }
+
+    public function show(Request $request, Order $order)
+    {
+        if (! $order->hasParticipant($request->user()) || $order->user_id === $request->user()->id) {
+            return redirect()->route('mitra.pesanan')->with('error', 'Pesanan tidak ditemukan.');
+        }
+
+        $order->messages()->whereNull('read_at')->where('sender_id', '!=', $request->user()->id)->update(['read_at' => now()]);
+        $order->load(['user', 'service']);
+        $messages = $order->messages()->with('sender')->latest()->limit(50)->get()->reverse()->values();
+
+        return view('mitra.pesanan-show', compact('order', 'messages'));
     }
 
     /** Terima pesanan. */
@@ -83,7 +97,7 @@ class TherapistOrderController extends Controller
                 return back()->with('error', 'Aktifkan lokasi untuk memulai layanan panggilan.');
             }
             $radius = (int) config('goterapis.start_radius_m');
-            $distance = \App\Support\Geo::distanceMeters((float) $data['lat'], (float) $data['lng'], (float) $order->lat, (float) $order->lng);
+            $distance = Geo::distanceMeters((float) $data['lat'], (float) $data['lng'], (float) $order->lat, (float) $order->lng);
 
             // Longgarkan sebesar ketidakpastian kedua pembacaan (GPS bisa meleset, terutama non-mobile).
             // Tolak hanya bila yakin jauh: jarak terdekat yang mungkin masih di luar radius.

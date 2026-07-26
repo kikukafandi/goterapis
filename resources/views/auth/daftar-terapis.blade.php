@@ -216,7 +216,7 @@
         </h1>
 
         <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-kabut">
-            Lengkapi data secara bertahap. Setelah mendaftar, status awalmu
+            Lengkapi profil dan layananmu dalam enam tahap. Setelah mendaftar, status awalmu
             <strong class="font-semibold text-arang">Anggota Komunitas</strong>.
         </p>
     </div>

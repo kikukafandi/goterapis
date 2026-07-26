@@ -43,7 +43,7 @@
         {{-- Ubah status verifikasi --}}
         <form method="post" action="{{ route('admin.therapist.status', $therapist) }}" class="rounded-2xl border border-garis bg-white p-5">
             @csrf @method('patch')
-            <p class="font-semibold text-arang">Status verifikasi</p>
+            <p class="font-semibold text-arang">Status verifikasi profil</p>
             <select name="verification_status" class="mt-3 w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm outline-none focus:border-daun">
                 @foreach (\App\Models\TherapistProfile::STATUS_LABELS as $k => $v)
                     <option value="{{ $k }}" @selected($therapist->verification_status === $k)>{{ $v }}</option>
@@ -94,14 +94,14 @@
                                 <form method="post" action="{{ route('admin.document.review', $doc) }}" class="flex-1">
                                     @csrf @method('patch')
                                     <input type="hidden" name="status" value="approved">
-                                    <button class="w-full rounded-lg bg-daun px-3 py-1.5 text-xs font-semibold text-white hover:bg-daun-tua">Setujui</button>
+                                    <button class="w-full rounded-lg bg-daun px-3 py-1.5 text-xs font-semibold text-white hover:bg-daun-tua">Setujui dokumen</button>
                                 </form>
                                 <form method="post" action="{{ route('admin.document.review', $doc) }}" class="flex-1"
                                       x-data @submit.prevent="$refs.note.value = prompt('Alasan penolakan (opsional):') ?? ''; $el.submit()">
                                     @csrf @method('patch')
                                     <input type="hidden" name="status" value="rejected">
                                     <input type="hidden" name="note" x-ref="note">
-                                    <button class="w-full rounded-lg border border-jahe/40 px-3 py-1.5 text-xs font-semibold text-jahe hover:bg-jahe/10">Tolak</button>
+                                    <button class="w-full rounded-lg border border-jahe/40 px-3 py-1.5 text-xs font-semibold text-jahe hover:bg-jahe/10">Tolak dokumen</button>
                                 </form>
                             </div>
                         </div>

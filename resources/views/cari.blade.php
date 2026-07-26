@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Cari Terapis')
+@section('title', 'Cari Terapis Sesuai Kebutuhan')
 
 @php
     $statusLabels = \App\Models\TherapistProfile::STATUS_LABELS;

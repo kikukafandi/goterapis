@@ -10,7 +10,7 @@
 @section('content')
 <div class="mx-auto max-w-3xl px-4 pb-28 pt-6">
     <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('cari') }}"
-       class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">← Kembali</a>
+       class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">← Kembali ke hasil pencarian</a>
 
     {{-- Kepala profil --}}
     <div class="rounded-card border border-garis bg-white p-5 sm:p-6">

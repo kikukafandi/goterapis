@@ -1,15 +1,19 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminProductController;
+use App\Http\Controllers\AdminPromotionBannerController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TherapistRegisterController;
 use App\Http\Controllers\CariController;
+use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TherapistOrderController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +30,8 @@ Route::get('/terapis/{therapist}', [CariController::class, 'show'])->name('terap
 // Jurnal — artikel publik
 Route::get('/artikel', [JurnalController::class, 'index'])->name('artikel.index');
 Route::get('/artikel/{article:slug}', [JurnalController::class, 'show'])->name('artikel.show');
+Route::get('/produk', [ProductController::class, 'index'])->name('products.index');
+Route::get('/produk/{product:slug}', [ProductController::class, 'show'])->name('products.show');
 
 // Auth (login bersama, redirect sesuai role)
 Route::middleware('guest')->group(function () {
@@ -48,6 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pesanan', [OrderController::class, 'index'])->name('pesanan.index');
     Route::post('/pesanan', [OrderController::class, 'store'])->name('pesanan.store');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('pesanan.show');
+    Route::post('/pesanan/{order}/chat', [ChatMessageController::class, 'store'])->name('pesanan.chat.store');
+    Route::get('/chat', [ChatMessageController::class, 'index'])->name('chat');
     Route::post('/pesanan/{order}/bayar', [PaymentController::class, 'store'])->name('pesanan.pay');
     Route::patch('/pesanan/{order}/selesai', [OrderController::class, 'complete'])->name('pesanan.complete');
     Route::patch('/pesanan/{order}/batal', [OrderController::class, 'cancel'])->name('pesanan.cancel');
@@ -57,6 +65,7 @@ Route::middleware('auth')->group(function () {
 // Panel terapis (mitra) — kelola pesanan masuk
 Route::middleware(['auth', 'therapist'])->prefix('mitra')->name('mitra.')->group(function () {
     Route::get('/pesanan', [TherapistOrderController::class, 'index'])->name('pesanan');
+    Route::get('/pesanan/{order}', [TherapistOrderController::class, 'show'])->name('pesanan.show');
     Route::patch('/pesanan/{order}/terima', [TherapistOrderController::class, 'accept'])->name('pesanan.accept');
     Route::patch('/pesanan/{order}/tolak', [TherapistOrderController::class, 'reject'])->name('pesanan.reject');
     Route::patch('/pesanan/{order}/mulai', [TherapistOrderController::class, 'start'])->name('pesanan.start');
@@ -75,4 +84,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->parameters(['artikel' => 'article'])
         ->except('show')
         ->names('articles');
+    Route::resource('produk', AdminProductController::class)
+        ->parameters(['produk' => 'product'])
+        ->except('show')
+        ->names('products');
+    Route::resource('banner-promosi', AdminPromotionBannerController::class)
+        ->parameters(['banner-promosi' => 'banner'])
+        ->except('show')
+        ->names('banners');
 });
