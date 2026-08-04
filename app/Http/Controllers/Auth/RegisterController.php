@@ -22,6 +22,7 @@ class RegisterController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:20', 'unique:users,phone'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'legal_accepted' => ['accepted'],
         ]);
 
         $user = User::create([
@@ -30,11 +31,13 @@ class RegisterController extends Controller
             'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
             'role' => 'user',
+            'legal_version' => config('legal.version'),
+            'legal_accepted_at' => now(),
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect()->route('tutorial');
     }
 }

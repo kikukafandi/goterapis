@@ -12,6 +12,7 @@
 </head>
 <body class="min-h-dvh antialiased">
     @include('partials.header')
+    <x-notifications />
 
     <main class="pb-24 md:pb-0">
         @if (session('success'))

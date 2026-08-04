@@ -32,7 +32,7 @@ class PaymentController extends Controller
         }
 
         // Simulasi → lunas seketika.
-        $order->update(['status' => 'paid']);
+        $order->changeStatus('paid', 'Pembayaran pesanan berhasil.');
 
         return redirect()->route('pesanan.show', $order)->with('success', 'Pembayaran berhasil. Menunggu terapis menerima pesanan.');
     }

@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Notifications\OrderStatusChanged;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    public const BLOCKING_STATUSES = ['pending_confirmation', 'pending_payment', 'paid', 'accepted', 'therapist_en_route', 'therapist_arrived', 'in_progress'];
+
     protected $guarded = ['id'];
 
     protected $casts = [
@@ -50,17 +54,46 @@ class Order extends Model
     public static function expireUnpaid(): int
     {
         $window = (int) config('goterapis.payment_window_hours');
-
-        return static::where('status', 'pending_payment')
+        $orders = static::where('status', 'pending_payment')
             ->whereNotNull('accepted_at')
             ->where(fn ($q) => $q
                 ->where('accepted_at', '<=', now()->subHours($window))
                 ->orWhere('scheduled_at', '<=', now()))
-            ->update([
-                'status' => 'cancelled',
+            ->get();
+
+        foreach ($orders as $order) {
+            $order->changeStatus('cancelled', 'Pesanan dibatalkan karena batas pembayaran berakhir.', [
                 'cancelled_at' => now(),
                 'cancel_reason' => 'Pembayaran tidak diselesaikan sampai batas waktu.',
             ]);
+        }
+
+        return $orders->count();
+    }
+
+    public function changeStatus(string $status, string $message, array $attributes = []): bool
+    {
+        if ($this->status === $status) {
+            return false;
+        }
+
+        $previousStatus = $this->status;
+        DB::transaction(function () use ($status, $message, $attributes, $previousStatus) {
+            $this->update([...$attributes, 'status' => $status]);
+            if ($status === 'completed' && $previousStatus === 'in_progress') {
+                $this->earning()->firstOrCreate([], [
+                    'therapist_profile_id' => $this->therapist_profile_id,
+                    'amount' => $this->payout,
+                    'available_at' => $this->completed_at->copy()->addDay(),
+                ]);
+            }
+            $this->loadMissing(['user', 'therapistProfile.user']);
+            collect([$this->user, $this->therapistProfile?->user])->filter()->unique('id')
+                ->reject(fn (User $user) => $user->is(auth()->user()))
+                ->each->notify(new OrderStatusChanged($this, $message));
+        });
+
+        return true;
     }
 
     public function hasParticipant(Authenticatable $user): bool
@@ -102,5 +135,10 @@ class Order extends Model
     public function review(): HasOne
     {
         return $this->hasOne(Review::class);
+    }
+
+    public function earning(): HasOne
+    {
+        return $this->hasOne(Earning::class);
     }
 }

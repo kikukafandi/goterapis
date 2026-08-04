@@ -21,19 +21,49 @@ class RegisterTest extends TestCase
             'phone' => '081234567890',
             'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123',
+            'legal_accepted' => '1',
+            'legal_version' => 'PALSU',
         ]);
 
-        $response->assertRedirect('/');
+        $response->assertRedirect('/tutorial');
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'budi@example.com',
             'role' => 'user',
+            'legal_version' => config('legal.version'),
         ]);
+        $this->assertNotNull(User::where('email', 'budi@example.com')->value('legal_accepted_at'));
+    }
+
+    public function test_user_registration_requires_legal_consent(): void
+    {
+        $this->from('/daftar')->post('/daftar', [
+            'name' => 'Budi Santoso',
+            'email' => 'tanpapersetujuan@example.com',
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+        ])->assertRedirect('/daftar')->assertSessionHasErrors('legal_accepted');
+
+        $this->assertDatabaseMissing('users', ['email' => 'tanpapersetujuan@example.com']);
+    }
+
+    public function test_therapist_registration_requires_legal_consent(): void
+    {
+        $this->from('/daftar-terapis')->post('/daftar-terapis', [
+            'name' => 'Terapis Tanpa Persetujuan',
+            'email' => 'terapis-tanpapersetujuan@example.com',
+            'phone' => '081234567800',
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+        ])->assertRedirect('/daftar-terapis')->assertSessionHasErrors('legal_accepted');
+
+        $this->assertDatabaseMissing('users', ['email' => 'terapis-tanpapersetujuan@example.com']);
     }
 
     public function test_therapist_registration_creates_profile_services_and_documents(): void
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $pijat = Service::create(['name' => 'Pijat Tradisional', 'slug' => 'pijat-tradisional', 'category' => 'pijat']);
         $bekam = Service::create(['name' => 'Bekam Basah', 'slug' => 'bekam-basah', 'category' => 'bekam']);
@@ -57,6 +87,8 @@ class RegisterTest extends TestCase
             'ktp' => UploadedFile::fake()->image('ktp.jpg'),
             'avatar' => UploadedFile::fake()->image('foto.jpg'),
             'sertifikat_pelatihan' => UploadedFile::fake()->create('sertifikat.pdf', 100, 'application/pdf'),
+            'legal_accepted' => '1',
+            'legal_version' => 'PALSU',
         ]);
 
         $response->assertRedirect();
@@ -64,7 +96,10 @@ class RegisterTest extends TestCase
 
         $user = User::where('email', 'siti@example.com')->firstOrFail();
         $this->assertSame('therapist', $user->role);
+        $this->assertSame(config('legal.version'), $user->legal_version);
+        $this->assertNotNull($user->legal_accepted_at);
         $this->assertNotNull($user->avatar_path);
+        Storage::disk('public')->assertExists($user->avatar_path);
 
         $profile = $user->therapistProfile;
         $this->assertNotNull($profile);
@@ -82,6 +117,10 @@ class RegisterTest extends TestCase
             ['ktp', 'sertifikat_pelatihan'],
             $profile->documents->pluck('type')->all(),
         );
+        foreach ($profile->documents as $document) {
+            Storage::disk('local')->assertExists($document->path);
+            Storage::disk('public')->assertMissing($document->path);
+        }
     }
 
     public function test_therapist_registration_requires_a_service_model(): void
@@ -101,6 +140,7 @@ class RegisterTest extends TestCase
             'services' => [$service->id],
             'ktp' => UploadedFile::fake()->image('ktp.jpg'),
             'avatar' => UploadedFile::fake()->image('foto.jpg'),
+            'legal_accepted' => '1',
             // serves_call & serves_place sengaja dikosongkan
         ]);
 

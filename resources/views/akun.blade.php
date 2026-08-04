@@ -27,8 +27,14 @@
     {{-- Pintasan sesuai peran --}}
     <div class="mt-5 space-y-2">
         @if ($user->role === 'therapist')
+            <a href="{{ route('mitra.profil.edit') }}" class="flex items-center justify-between rounded-card border border-garis bg-white px-5 py-4 text-sm font-semibold text-arang transition-colors hover:border-daun">
+                Edit profil <span class="text-kabut">›</span>
+            </a>
             <a href="{{ route('mitra.pesanan') }}" class="flex items-center justify-between rounded-card border border-garis bg-white px-5 py-4 text-sm font-semibold text-arang transition-colors hover:border-daun">
                 Pesanan masuk <span class="text-kabut">›</span>
+            </a>
+            <a href="{{ route('mitra.saldo') }}" class="flex items-center justify-between rounded-card border border-garis bg-white px-5 py-4 text-sm font-semibold text-arang transition-colors hover:border-daun">
+                Saldo & penarikan <span class="text-kabut">›</span>
             </a>
             @if ($profile)
                 <a href="{{ route('terapis.show', $profile) }}" class="flex items-center justify-between rounded-card border border-garis bg-white px-5 py-4 text-sm font-semibold text-arang transition-colors hover:border-daun">
@@ -40,6 +46,9 @@
                 Riwayat pesanan <span class="text-kabut">›</span>
             </a>
         @endif
+        <a href="{{ route('tutorial') }}" class="flex items-center justify-between rounded-card border border-garis bg-white px-5 py-4 text-sm font-semibold text-arang transition-colors hover:border-daun">
+            Bantuan dan tutorial <span class="text-kabut">›</span>
+        </a>
     </div>
 
     <form method="post" action="{{ route('logout') }}" class="mt-5">

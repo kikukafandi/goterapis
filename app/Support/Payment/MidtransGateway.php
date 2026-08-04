@@ -4,6 +4,7 @@ namespace App\Support\Payment;
 
 use App\Contracts\PaymentGateway;
 use App\Models\Order;
+use Illuminate\Support\Facades\Http;
 use Midtrans\Config;
 use Midtrans\Snap;
 
@@ -43,5 +44,35 @@ class MidtransGateway implements PaymentGateway
         ]);
 
         return $snap->redirect_url;
+    }
+
+    public function refund(Order $order, int $amount): void
+    {
+        $payment = $order->payment;
+        if ($payment === null || $payment->status !== 'paid' || $amount <= 0 || $amount > $payment->amount) {
+            throw new \RuntimeException('Pembayaran tidak dapat dikembalikan.');
+        }
+        if ($payment->gateway === 'simulasi') {
+            $payment->update(['status' => 'refunded']);
+
+            return;
+        }
+        if ($payment->gateway !== 'midtrans') {
+            throw new \RuntimeException('Gateway pembayaran tidak mendukung pengembalian dana.');
+        }
+
+        $baseUrl = config('services.midtrans.is_production') ? 'https://api.midtrans.com' : 'https://api.sandbox.midtrans.com';
+        $response = Http::withBasicAuth((string) config('services.midtrans.server_key'), '')
+            ->post($baseUrl.'/v2/'.rawurlencode((string) $payment->gateway_ref).'/refund', [
+                'refund_key' => 'refund-'.$order->code,
+                'amount' => $amount,
+                'reason' => 'Pembatalan pesanan '.$order->code,
+            ])->throw();
+
+        if ((string) $response->json('status_code') !== '200') {
+            throw new \RuntimeException('Pengembalian dana Midtrans gagal.');
+        }
+
+        $payment->update(['status' => 'refunded']);
     }
 }

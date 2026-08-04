@@ -124,6 +124,17 @@ class ChatTest extends TestCase
             ->assertOk()->assertSee('1 pesan baru')->assertSee('Pesan sendiri');
     }
 
+    public function test_chat_menampilkan_ringkasan_pesanan(): void
+    {
+        $order = $this->order();
+
+        $this->actingAs($order->user)->get(route('pesanan.show', $order))
+            ->assertOk()
+            ->assertSee($order->code)
+            ->assertSee($order->service->name)
+            ->assertSee('Lihat detail pesanan');
+    }
+
     public function test_membuka_detail_menandai_hanya_pesan_masuk_dan_akses_tidak_sah_tidak_mengubahnya(): void
     {
         $order = $this->order();

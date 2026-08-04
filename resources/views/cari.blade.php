@@ -148,7 +148,23 @@
             @endforeach
         </div>
 
-        <div class="mt-8">{{ $therapists->links() }}</div>
+        @if ($therapists->hasPages())
+            <nav class="mt-8 flex items-center justify-between gap-3" aria-label="Navigasi halaman hasil pencarian">
+                @if ($therapists->onFirstPage())
+                    <span class="rounded-full border border-garis bg-kertas px-4 py-2 text-sm font-semibold text-kabut opacity-60">Sebelumnya</span>
+                @else
+                    <a href="{{ $therapists->previousPageUrl() }}" class="rounded-full border border-garis bg-white px-4 py-2 text-sm font-semibold text-daun transition-colors hover:border-daun hover:bg-daun-muda">Sebelumnya</a>
+                @endif
+
+                <span class="text-sm text-kabut">Halaman <strong class="text-arang">{{ $therapists->currentPage() }}</strong> dari {{ $therapists->lastPage() }}</span>
+
+                @if ($therapists->hasMorePages())
+                    <a href="{{ $therapists->nextPageUrl() }}" class="rounded-full bg-daun px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-daun-tua">Berikutnya</a>
+                @else
+                    <span class="rounded-full border border-garis bg-kertas px-4 py-2 text-sm font-semibold text-kabut opacity-60">Berikutnya</span>
+                @endif
+            </nav>
+        @endif
     @endif
 </section>
 @endsection

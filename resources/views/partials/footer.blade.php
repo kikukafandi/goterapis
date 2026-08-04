@@ -28,11 +28,12 @@
                 </ul>
             </div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-kabut">Penting</p>
-                <p class="mt-3 text-sm text-kabut">
-                    GoTerapis bukan rumah sakit atau klinik dan tidak menggantikan tenaga medis.
-                    Untuk keadaan darurat, hubungi tenaga kesehatan.
-                </p>
+                <p class="text-xs font-bold uppercase tracking-wide text-kabut">Hukum & bantuan</p>
+                <ul class="mt-3 space-y-2 text-sm text-arang/80">
+                    @foreach (config('legal.documents') as $slug => $document)
+                        <li><a class="hover:text-daun" href="{{ route('legal.show', $slug) }}">{{ $document['title'] }}</a></li>
+                    @endforeach
+                </ul>
             </div>
         </div>
         <p class="mt-10 text-xs text-kabut">© {{ date('Y') }} GoTerapis. Layanan kebugaran & terapi tradisional.</p>

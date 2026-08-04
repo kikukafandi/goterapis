@@ -6,6 +6,8 @@
         'pending_confirmation' => 'Menunggu konfirmasi terapis',
         'pending_payment' => 'Menunggu pembayaran',
         'paid' => 'Sudah dibayar',
+        'therapist_en_route' => 'Terapis sedang OTW',
+        'therapist_arrived' => 'Terapis sudah tiba',
         'accepted' => 'Diterima terapis',
         'rejected' => 'Ditolak terapis',
         'in_progress' => 'Sedang berlangsung',
@@ -21,10 +23,16 @@
         ['label' => 'Pesanan dibuat', 'icon' => 'clipboard', 'at' => $order->created_at],
         ['label' => 'Diterima terapis', 'icon' => 'shield', 'at' => $order->accepted_at],
         ['label' => 'Pembayaran', 'icon' => 'wallet', 'at' => $order->payment?->paid_at],
+        ...($order->model === 'panggilan' ? [
+            ['label' => 'Terapis OTW', 'icon' => 'leaf', 'at' => null],
+            ['label' => 'Terapis tiba', 'icon' => 'leaf', 'at' => null],
+        ] : []),
         ['label' => 'Layanan berlangsung', 'icon' => 'leaf', 'at' => $order->started_at],
         ['label' => 'Selesai', 'icon' => 'star', 'at' => $order->completed_at],
     ];
-    $currentStep = match ($order->status) {
+    $currentStep = $order->model === 'panggilan' ? match ($order->status) {
+        'pending_payment' => 1, 'paid', 'accepted' => 2, 'therapist_en_route' => 3, 'therapist_arrived' => 4, 'in_progress' => 5, 'completed' => 6, default => 0,
+    } : match ($order->status) {
         'pending_payment' => 1, 'paid', 'accepted' => 2, 'in_progress' => 3, 'completed' => 4, default => 0,
     };
     $negatives = ['rejected', 'cancelled', 'refunded', 'disputed'];
@@ -34,6 +42,8 @@
         'pending_confirmation' => 'Menunggu terapis mengonfirmasi. Kamu baru membayar setelah pesanan diterima.',
         'pending_payment' => 'Terapis sudah menerima. Selesaikan pembayaran — dana ditahan platform sampai layanan selesai.',
         'paid' => 'Pembayaran diterima. Siapkan dirimu sesuai jadwal.',
+        'therapist_en_route' => 'Terapis sedang menuju lokasimu.',
+        'therapist_arrived' => 'Terapis sudah tiba. Berikan PIN untuk memulai layanan.',
         'accepted' => 'Terapis sudah menerima. Siapkan dirimu sesuai jadwal.',
         'in_progress' => 'Layanan sedang berlangsung.',
         'completed' => 'Layanan selesai. Terima kasih! Beri ulasan untuk terapis.',
@@ -81,7 +91,7 @@
                     </p>
                 @endif
             </form>
-        @elseif (in_array($order->status, ['paid', 'accepted'], true))
+        @elseif (in_array($order->status, ['paid', 'therapist_en_route', 'therapist_arrived', 'accepted'], true))
             <div class="mt-4 rounded-xl border border-daun/25 bg-white p-4 text-center">
                 <p class="text-xs text-kabut">PIN mulai layanan — berikan ke terapis saat mulai</p>
                 <p class="mt-1 font-display text-3xl font-bold tracking-[0.3em] text-daun">{{ $order->start_pin }}</p>
@@ -150,6 +160,31 @@
                             Ya, batalkan pesanan
                         </button>
                     </form>
+                </div>
+            </div>
+        @endif
+
+        @if ($order->status === 'therapist_en_route' && $order->model === 'panggilan')
+            <div class="mt-5 rounded-card border border-daun/25 bg-daun-muda p-5"
+                 x-data="{
+                    location: @js($therapistLocation), now: Date.now(),
+                    init() {
+                        setInterval(() => this.now = Date.now(), 10000);
+                        window.Echo?.private('orders.{{ $order->id }}').listen('.therapist.location.updated', event => { this.location = event; this.now = Date.now() });
+                    },
+                    distance() {
+                        if (! this.location) return 'Menunggu lokasi terapis…';
+                        return this.location.distance_m < 1000 ? `${this.location.distance_m} m lagi` : `${(this.location.distance_m / 1000).toFixed(1).replace('.', ',')} km lagi`;
+                    },
+                    stale() { return ! this.location || this.now - new Date(this.location.updated_at).getTime() > 30000 }
+                 }">
+                <div class="flex items-start gap-3">
+                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-daun text-white"><x-icon name="pin" class="h-5 w-5" /></span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-daun">Perjalanan terapis</p>
+                        <p class="mt-0.5 font-display text-xl font-bold text-arang" x-text="distance()"></p>
+                        <p class="mt-1 text-xs" :class="stale() ? 'text-jahe' : 'text-kabut'" x-text="! location ? 'Belum ada pembaruan lokasi' : (stale() ? 'Lokasi terakhir sudah agak lama' : `Diperbarui ${new Date(location.updated_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} · akurasi ±${location.accuracy} m`)"></p>
+                    </div>
                 </div>
             </div>
         @endif

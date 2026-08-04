@@ -14,7 +14,7 @@ class TherapistOrderTest extends TestCase
     use RefreshDatabase;
 
     /** @return array{0:User,1:TherapistProfile,2:Order} pemilik terapis, profil, satu pesanan masuk */
-    private function therapistWithOrder(string $status = 'pending_confirmation'): array
+    private function therapistWithOrder(string $status = 'pending_confirmation', string $model = 'panggilan'): array
     {
         $therapistUser = User::factory()->create(['role' => 'therapist']);
         $profile = TherapistProfile::create([
@@ -32,7 +32,7 @@ class TherapistOrderTest extends TestCase
             'user_id' => $customer->id,
             'therapist_profile_id' => $profile->id,
             'service_id' => $service->id,
-            'model' => 'panggilan',
+            'model' => $model,
             'scheduled_at' => now()->addDay(),
             'duration_min' => 60,
             'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
@@ -97,7 +97,7 @@ class TherapistOrderTest extends TestCase
 
     public function test_terapis_memulai_layanan_dengan_pin_benar(): void
     {
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
 
         $this->actingAs($therapistUser)
             ->patch(route('mitra.pesanan.start', $order), ['pin' => '123456'])
@@ -110,32 +110,59 @@ class TherapistOrderTest extends TestCase
 
     public function test_pin_salah_tidak_memulai_layanan(): void
     {
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
 
         $this->actingAs($therapistUser)
             ->patch(route('mitra.pesanan.start', $order), ['pin' => '000000'])
             ->assertRedirect()
             ->assertSessionHas('error');
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame('therapist_arrived', $order->fresh()->status);
     }
 
-    public function test_tidak_bisa_mulai_sebelum_dibayar(): void
+    public function test_tidak_bisa_mulai_sebelum_tiba(): void
     {
-        [$therapistUser, , $order] = $this->therapistWithOrder('pending_payment');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_en_route');
 
         $this->actingAs($therapistUser)
             ->patch(route('mitra.pesanan.start', $order), ['pin' => '123456'])
             ->assertRedirect()
             ->assertSessionHas('error');
 
-        $this->assertSame('pending_payment', $order->fresh()->status);
+        $this->assertSame('therapist_en_route', $order->fresh()->status);
+    }
+
+    public function test_layanan_tempat_bisa_dimulai_dari_status_paid(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder('paid', 'tempat');
+
+        $this->actingAs($therapistUser)
+            ->patch(route('mitra.pesanan.start', $order), ['pin' => '123456'])
+            ->assertRedirect();
+
+        $this->assertSame('in_progress', $order->fresh()->status);
+    }
+
+    public function test_input_pin_panggilan_hanya_tampil_setelah_terapis_tiba(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_en_route');
+
+        $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
+            ->assertOk()
+            ->assertSee('Saya sudah tiba')
+            ->assertDontSee('PIN 6 digit');
+
+        $order->update(['status' => 'therapist_arrived']);
+
+        $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
+            ->assertOk()
+            ->assertSee('PIN 6 digit');
     }
 
     public function test_terapis_di_titik_pelanggan_bisa_mulai(): void
     {
         config(['goterapis.start_radius_m' => 150]);
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
         $order->update(['lat' => -7.7975000, 'lng' => 110.3705000]);
 
         // ~55 m dari titik pelanggan → dalam radius
@@ -149,7 +176,7 @@ class TherapistOrderTest extends TestCase
     public function test_terapis_jauh_dari_titik_ditolak(): void
     {
         config(['goterapis.start_radius_m' => 150]);
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
         $order->update(['lat' => -7.7975000, 'lng' => 110.3705000]);
 
         // ~1,1 km → di luar radius
@@ -158,13 +185,13 @@ class TherapistOrderTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('error');
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame('therapist_arrived', $order->fresh()->status);
     }
 
     public function test_akurasi_rendah_melonggarkan_cek_jarak(): void
     {
         config(['goterapis.start_radius_m' => 150]);
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
         // Titik pelanggan dengan akurasi buruk (mis. laptop/WiFi), ~3 km ketidakpastian.
         $order->update(['lat' => -7.7975000, 'lng' => 110.3705000, 'loc_accuracy' => 3000]);
 
@@ -180,7 +207,7 @@ class TherapistOrderTest extends TestCase
 
     public function test_panggilan_tanpa_lokasi_terapis_ditolak(): void
     {
-        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
         $order->update(['lat' => -7.7975000, 'lng' => 110.3705000]);
 
         $this->actingAs($therapistUser)
@@ -188,7 +215,7 @@ class TherapistOrderTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('error');
 
-        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame('therapist_arrived', $order->fresh()->status);
     }
 
     public function test_pengguna_biasa_tidak_bisa_membuka_panel_terapis(): void

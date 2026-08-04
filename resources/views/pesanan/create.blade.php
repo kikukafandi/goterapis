@@ -20,11 +20,26 @@
         services: @js($services),
         serviceFee: {{ $serviceFee }},
         transportFee: {{ $transportFee }},
+        date: @js(old('scheduled_at') ? substr(old('scheduled_at'), 0, 10) : now()->addDay()->format('Y-m-d')),
+        selectedSlot: @js(old('scheduled_at')),
+        slots: [], loadingSlots: false, slotError: '',
+        async loadSlots() {
+            if (! this.date || ! this.serviceId) return;
+            this.loadingSlots = true; this.slotError = '';
+            try {
+                const query = new URLSearchParams({ date: this.date, service_id: this.serviceId });
+                const response = await fetch(@js(route('pesan.availability', $therapist)) + '?' + query);
+                if (! response.ok) throw new Error();
+                this.slots = (await response.json()).slots;
+                if (! this.slots.some(slot => slot.value === this.selectedSlot)) this.selectedSlot = '';
+            } catch { this.slots = []; this.slotError = 'Jadwal belum dapat dimuat. Silakan coba lagi.' }
+            this.loadingSlots = false;
+        },
         get price() { return (this.services.find(s => s.id == this.serviceId) || {}).price || 0 },
         get transport() { return this.model === 'panggilan' ? this.transportFee : 0 },
         get total() { return this.price + this.transport + this.serviceFee },
         rupiah(n) { return 'Rp' + (n || 0).toLocaleString('id-ID') },
-     }">
+     }" x-init="loadSlots()" x-effect="serviceId; loadSlots()">
     <a href="{{ route('terapis.show', $therapist) }}"
        class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">← Kembali ke profil</a>
 
@@ -96,7 +111,7 @@
                             { enableHighAccuracy: true, timeout: 10000 }
                         );
                     }
-                 }">
+                  }">
                 <label class="block text-sm font-semibold text-arang">Alamat lengkap</label>
                 <textarea name="address" rows="2" placeholder="Nama jalan, nomor rumah, patokan…"
                           class="mt-2 w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm text-arang outline-none placeholder:text-kabut focus:border-daun">{{ old('address') }}</textarea>
@@ -117,11 +132,35 @@
 
         {{-- Jadwal --}}
         <div class="rounded-card border border-garis bg-white p-5">
-            <label class="block text-sm font-semibold text-arang">Waktu layanan</label>
-            <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}"
-                   min="{{ now()->addHour()->format('Y-m-d\TH:i') }}"
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <label for="booking-date" class="block text-sm font-semibold text-arang">Tanggal layanan</label>
+                    <p class="mt-1 text-xs text-kabut">Slot yang tampil sudah memperhitungkan pesanan lain · WIB</p>
+                </div>
+                <x-icon name="calendar" class="h-5 w-5 text-daun" />
+            </div>
+            <input id="booking-date" type="date" x-model="date" @change="loadSlots()"
+                   min="{{ now()->format('Y-m-d') }}"
                    class="mt-3 w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm text-arang outline-none focus:border-daun">
-            <label class="mt-4 block text-sm font-semibold text-arang">Catatan (opsional)</label>
+            <input type="hidden" name="scheduled_at" :value="selectedSlot">
+
+            <fieldset class="mt-4">
+                <legend class="text-sm font-semibold text-arang">Jam tersedia</legend>
+                <p x-show="loadingSlots" class="mt-3 text-sm text-kabut">Memeriksa jadwal terapis…</p>
+                <p x-show="slotError" x-text="slotError" class="mt-3 text-sm text-jahe"></p>
+                <p x-show="! loadingSlots && ! slotError && slots.length === 0" class="mt-3 rounded-xl bg-kertas px-4 py-3 text-sm text-kabut">Belum ada slot tersedia pada tanggal ini.</p>
+                <div x-show="! loadingSlots && slots.length" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    <template x-for="slot in slots" :key="slot.value">
+                        <label class="cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-semibold transition-colors"
+                               :class="selectedSlot === slot.value ? 'border-daun bg-daun text-white' : 'border-garis text-arang hover:border-daun'">
+                            <input type="radio" class="sr-only" :value="slot.value" x-model="selectedSlot">
+                            <span x-text="slot.label"></span>
+                        </label>
+                    </template>
+                </div>
+            </fieldset>
+
+            <label class="mt-5 block text-sm font-semibold text-arang">Catatan (opsional)</label>
             <textarea name="notes" rows="2" placeholder="Keluhan atau permintaan khusus…"
                       class="mt-2 w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm text-arang outline-none placeholder:text-kabut focus:border-daun">{{ old('notes') }}</textarea>
         </div>
@@ -137,8 +176,8 @@
             </dl>
         </div>
 
-        <button type="submit"
-                class="w-full rounded-full bg-daun px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-daun-tua">
+        <button type="submit" :disabled="! selectedSlot || loadingSlots"
+                class="w-full rounded-full bg-daun px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-daun-tua disabled:cursor-not-allowed disabled:opacity-50">
             Buat pesanan
         </button>
         <p class="text-center text-xs text-kabut">Pembayaran akan tersedia pada langkah berikutnya.</p>

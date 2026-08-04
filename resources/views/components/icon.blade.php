@@ -24,6 +24,7 @@
         'user'        => '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5"/>',
         'compass'     => '<circle cx="12" cy="12" r="8"/><path d="m15 9-2 4-4 2 2-4z"/>',
         'leaf'        => '<path d="M20 4C10 4 4 10 4 20c8 0 16-6 16-16Z"/><path d="M8 16c3-4 6-6 9-7"/>',
+        'bell'        => '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
     ];
     $svg = $icons[$name] ?? $icons['leaf'];
 @endphp

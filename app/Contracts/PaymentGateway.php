@@ -15,4 +15,6 @@ interface PaymentGateway
      * Kembalikan URL redirect gateway, atau null bila sudah lunas seketika (simulasi).
      */
     public function pay(Order $order): ?string;
+
+    public function refund(Order $order, int $amount): void;
 }

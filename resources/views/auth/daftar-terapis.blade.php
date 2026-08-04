@@ -851,6 +851,11 @@
                 </div>
             </div>
 
+            <label class="mt-5 flex items-start gap-2 rounded-2xl border border-garis p-4 text-xs leading-5 text-kabut">
+                <input type="checkbox" name="legal_accepted" value="1" required @checked(old('legal_accepted')) class="mt-1 rounded border-garis text-daun focus:ring-daun">
+                <span>Saya menyetujui <a href="{{ route('legal.show', 'syarat-ketentuan') }}" target="_blank" class="font-semibold text-daun hover:underline">Syarat dan Ketentuan</a>, <a href="{{ route('legal.show', 'kebijakan-privasi') }}" target="_blank" class="font-semibold text-daun hover:underline">Kebijakan Privasi</a>, dan aturan komunitas GoTerapis.</span>
+            </label>
+
             <div class="mt-5 rounded-2xl bg-daun/5 p-4">
                 <p class="text-sm font-semibold text-arang">
                     Data sudah hampir selesai

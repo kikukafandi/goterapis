@@ -173,6 +173,11 @@
                     </div>
                 </div>
 
+                <label class="flex items-start gap-2 text-xs leading-5 text-kabut">
+                    <input type="checkbox" name="legal_accepted" value="1" required @checked(old('legal_accepted')) class="mt-1 rounded border-garis text-daun focus:ring-daun">
+                    <span>Saya menyetujui <a href="{{ route('legal.show', 'syarat-ketentuan') }}" target="_blank" class="font-semibold text-daun hover:underline">Syarat dan Ketentuan</a> serta <a href="{{ route('legal.show', 'kebijakan-privasi') }}" target="_blank" class="font-semibold text-daun hover:underline">Kebijakan Privasi</a>.</span>
+                </label>
+
                 <button
                     type="submit"
                     class="w-full rounded-full bg-daun px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-daun-tua"

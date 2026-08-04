@@ -6,6 +6,8 @@
         'pending_confirmation' => 'Perlu konfirmasi',
         'pending_payment' => 'Menunggu pembayaran',
         'paid' => 'Sudah dibayar',
+        'therapist_en_route' => 'Sedang OTW',
+        'therapist_arrived' => 'Sudah tiba',
         'accepted' => 'Diterima',
         'rejected' => 'Ditolak',
         'in_progress' => 'Berlangsung',
@@ -69,7 +71,17 @@
                             <span class="mt-0.5 block text-xs text-kabut">Batal otomatis bila belum dibayar sampai {{ $batasBayar->translatedFormat('d M Y · H:i') }}.</span>
                         @endif
                     </p>
-                @elseif (in_array($order->status, ['paid', 'accepted'], true))
+                @elseif ($order->status === 'paid' && $order->model === 'panggilan')
+                    <form method="post" action="{{ route('mitra.pesanan.en-route', $order) }}" class="mt-4">
+                        @csrf @method('patch')
+                        <button class="w-full rounded-full bg-kunyit px-4 py-2.5 text-sm font-semibold text-arang">Saya sedang OTW</button>
+                    </form>
+                @elseif ($order->status === 'therapist_en_route' && $order->model === 'panggilan')
+                    <form method="post" action="{{ route('mitra.pesanan.arrive', $order) }}" class="mt-4">
+                        @csrf @method('patch')
+                        <button class="w-full rounded-full bg-kunyit px-4 py-2.5 text-sm font-semibold text-arang">Saya sudah tiba</button>
+                    </form>
+                @elseif (($order->status === 'therapist_arrived' && $order->model === 'panggilan') || ($order->status === 'paid' && $order->model !== 'panggilan'))
                     <form method="post" action="{{ route('mitra.pesanan.start', $order) }}" class="mt-4"
                           @submit.prevent="go($el)"
                           x-data="{

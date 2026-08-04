@@ -18,7 +18,7 @@
     <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 lg:gap-6">
         {{-- Logo --}}
         <a href="/" class="flex shrink-0 items-center gap-2 font-display text-xl font-semibold text-daun">
-            <x-icon name="leaf" class="h-6 w-6" /> GoTerapis
+            <span class="grid h-7 w-7 place-items-center rounded-lg border border-daun text-[10px] font-bold">GT</span> GoTerapis
         </a>
 
         {{-- Nav desktop (gaya Upwork: menu + mega-menu) --}}
@@ -83,6 +83,12 @@
                 @if (auth()->user()->role !== 'admin')
                     <a href="{{ route('chat') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('chat') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Percakapan</a>
                 @endif
+                <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 place-items-center rounded-full {{ request()->routeIs('notifications.*') ? 'bg-daun-muda text-daun' : 'text-arang hover:bg-kertas' }}">
+                    <x-icon name="bell" class="h-5 w-5" />
+                    @if ($unread = auth()->user()->unreadNotifications()->count())
+                        <span class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-kunyit px-1 text-center text-[10px] font-bold leading-5 text-arang">{{ $unread > 99 ? '99+' : $unread }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('akun') }}" class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold {{ request()->is('akun') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">
                     <x-icon name="user" class="h-4 w-4" /> {{ auth()->user()->name }}
                 </a>
@@ -101,6 +107,14 @@
             <a href="/cari" aria-label="Cari" class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
                 <x-icon name="search" class="h-5 w-5" />
             </a>
+            @auth
+                <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
+                    <x-icon name="bell" class="h-5 w-5" />
+                    @if ($unread = auth()->user()->unreadNotifications()->count())
+                        <span class="absolute right-0 top-0 min-w-5 rounded-full bg-kunyit px-1 text-center text-[10px] font-bold leading-5 text-arang">{{ $unread > 99 ? '99+' : $unread }}</span>
+                    @endif
+                </a>
+            @endauth
             <button type="button" @click="mobile = true" aria-label="Menu" aria-controls="menu-mobile" :aria-expanded="mobile"
                     class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
                 <x-icon name="menu" class="h-6 w-6" />

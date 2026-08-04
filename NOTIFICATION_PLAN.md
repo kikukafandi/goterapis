@@ -66,6 +66,21 @@ Gateway dijalankan sebagai layanan terpisah dan menyediakan:
 7. Tambahkan retry, rate limit, health monitoring, dan fallback.
 8. Evaluasi migrasi ke WhatsApp Cloud API jika stabilitas atau skala membutuhkan.
 
+## Prioritas Lanjutan
+
+1. Stabilkan sesi WhatsApp: telusuri penyebab `LOGOUT`, tambahkan reconnect, monitoring status, dan health check.
+2. Jalankan pengujian E2E untuk pesanan baru, diterima/ditolak, pembayaran, OTW, tiba, mulai, dan selesai.
+3. Tambahkan pengingat terjadwal untuk pesanan yang belum dijawab, H-1, dan satu jam sebelum layanan.
+4. Amankan booking dan pembayaran dengan pencegahan double-booking, validasi webhook, dan refund Midtrans nyata.
+5. Siapkan deployment dengan Supervisor untuk queue, Reverb, dan gateway WhatsApp; cron scheduler; HTTPS; serta backup.
+
+## Status Implementasi
+
+- Inbox aplikasi dan notifikasi realtime sudah tersedia.
+- Gateway self-hosted `whatsapp-web.js` sudah terhubung ke dashboard admin melalui QR.
+- Notifikasi pesanan dapat dikirim melalui WhatsApp, tetapi kestabilan sesi masih perlu diperbaiki karena pernah mengalami `LOGOUT`.
+- Halaman edit profil terapis sudah tersedia; nomor WhatsApp dipakai secara internal dan tidak ditampilkan kepada pelanggan.
+
 ## Batas MVP
 
 Belum mencakup tombol interaktif asli WhatsApp, broadcast pemasaran, balasan bot, editor template kompleks, atau pelacakan lokasi background. Tombol interaktif asli ditambahkan ketika memakai WhatsApp Business API resmi.

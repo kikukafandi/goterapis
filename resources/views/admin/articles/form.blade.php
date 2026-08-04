@@ -4,7 +4,8 @@
 
 @section('content')
 @if ($errors->any())
-    <div class="mb-5 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm text-jahe">
+    <div role="alert" class="mb-5 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm text-jahe">
+        <p class="mb-2 font-semibold">Periksa kembali isian berikut.</p>
         <ul class="list-inside list-disc">
             @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
         </ul>
@@ -24,7 +25,7 @@
 
     {{-- ===== KIRI: konten (lebar) ===== --}}
     <div class="min-w-0 space-y-4">
-        <input name="title" x-model="title" required autofocus placeholder="Judul artikel"
+        <input name="title" x-model="title" required autofocus aria-label="Judul artikel" placeholder="Judul artikel"
                class="w-full bg-transparent font-display text-2xl font-bold text-arang outline-none placeholder:text-kabut/40 sm:text-3xl">
 
         {{-- Editor WYSIWYG (CKEditor 5) menggantikan textarea ini --}}
@@ -39,7 +40,7 @@
     {{-- ===== KANAN: SEO, gambar & atribut ===== --}}
     <aside class="space-y-4 lg:sticky lg:top-20">
         {{-- Aksi --}}
-        <div class="rounded-2xl border border-garis bg-white p-4">
+        <div class="rounded-card border border-garis bg-white p-4">
             <button class="w-full rounded-full bg-daun px-5 py-2.5 text-sm font-semibold text-white hover:bg-daun-tua">
                 {{ $article->exists ? 'Simpan perubahan' : 'Simpan artikel' }}
             </button>
@@ -48,11 +49,11 @@
         </div>
 
         {{-- SEO --}}
-        <div class="rounded-2xl border border-garis bg-white p-4">
+        <div class="rounded-card border border-garis bg-white p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-kabut">SEO</p>
 
             <label class="mt-3 block text-sm font-semibold text-arang">Judul SEO</label>
-            <input name="meta_title" x-model="metaTitle" maxlength="70" x-bind:placeholder="title || 'Judul di hasil pencarian'"
+            <input name="meta_title" x-model="metaTitle" maxlength="60" x-bind:placeholder="title || 'Judul di hasil pencarian'"
                    class="mt-1.5 w-full rounded-xl border border-garis bg-white px-3 py-2 text-sm outline-none focus:border-daun">
             <div class="mt-1 flex justify-between text-xs text-kabut">
                 <span>Kosongkan untuk memakai judul artikel.</span>
@@ -62,14 +63,14 @@
             <label class="mt-4 block text-sm font-semibold text-arang">Ringkasan</label>
             <textarea name="excerpt" x-model="excerpt" rows="3" maxlength="255"
                       placeholder="Deskripsi singkat untuk pratinjau & mesin pencari."
-                      class="mt-1.5 w-full resize-none rounded-xl border border-garis bg-white px-3 py-2 text-sm outline-none focus:border-daun"></textarea>
+                      class="mt-1.5 w-full resize-y rounded-xl border border-garis bg-white px-3 py-2 text-sm outline-none focus:border-daun"></textarea>
             <div class="mt-1 text-right text-xs text-kabut" x-text="excerpt.length + '/255'"></div>
 
             <p class="mt-3 truncate text-xs text-kabut">Tautan: <span class="text-daun" x-text="'/artikel/' + (slug || '…')"></span></p>
         </div>
 
         {{-- Gambar sampul (pratinjau + crop 3:2) --}}
-        <div class="rounded-2xl border border-garis bg-white p-4">
+        <div class="rounded-card border border-garis bg-white p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-kabut">Gambar sampul</p>
             <img id="cover-preview" src="{{ $article->coverUrl() }}" alt="Pratinjau sampul"
                  class="mt-3 aspect-[3/2] w-full rounded-xl object-cover {{ $article->coverUrl() ? '' : 'hidden' }}">
@@ -82,7 +83,7 @@
         </div>
 
         {{-- Terbit --}}
-        <div class="rounded-2xl border border-garis bg-white p-4">
+        <div class="rounded-card border border-garis bg-white p-4">
             <p class="text-xs font-bold uppercase tracking-wide text-kabut">Terbit</p>
             <label class="mt-3 block text-sm font-semibold text-arang">Tanggal terbit</label>
             <input type="datetime-local" name="published_at"
@@ -94,9 +95,9 @@
 </form>
 
 {{-- Dialog crop gambar sampul --}}
-<dialog id="crop-dialog" class="w-[92vw] max-w-lg rounded-2xl p-0 backdrop:bg-arang/50">
+<dialog id="crop-dialog" aria-labelledby="crop-title" class="w-[92vw] max-w-lg rounded-card p-0 backdrop:bg-arang/50">
     <div class="border-b border-garis px-5 py-3">
-        <h3 class="font-display font-bold text-arang">Sesuaikan gambar sampul</h3>
+        <h3 id="crop-title" class="font-display font-bold text-arang">Sesuaikan gambar sampul</h3>
         <p class="text-xs text-kabut">Geser & perbesar untuk memilih area (rasio 3:2).</p>
     </div>
     <div class="bg-kertas p-4">

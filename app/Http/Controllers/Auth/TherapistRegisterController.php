@@ -37,6 +37,7 @@ class TherapistRegisterController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            'legal_accepted' => ['accepted'],
             // Profil
             'gender' => ['required', 'in:pria,wanita'],
             'experience_years' => ['required', 'integer', 'min:0', 'max:70'],
@@ -81,6 +82,8 @@ class TherapistRegisterController extends Controller
                 'password' => $data['password'],
                 'role' => 'therapist',
                 'avatar_path' => $request->file('avatar')->store("therapist/{$data['email']}", 'public'),
+                'legal_version' => config('legal.version'),
+                'legal_accepted_at' => now(),
             ]);
 
             /** @var TherapistProfile $profile */
@@ -113,7 +116,7 @@ class TherapistRegisterController extends Controller
                 if ($request->hasFile($type)) {
                     $profile->documents()->create([
                         'type' => $type,
-                        'path' => $request->file($type)->store("therapist/{$data['email']}/dokumen", 'public'),
+                        'path' => $request->file($type)->store("therapist/{$data['email']}/dokumen"),
                     ]);
                 }
             }
@@ -124,7 +127,7 @@ class TherapistRegisterController extends Controller
         Auth::login($profile->user);
         $request->session()->regenerate();
 
-        return redirect()->route('terapis.show', $profile)
+        return redirect()->route('tutorial')
             ->with('success', 'Pendaftaran terkirim! Statusmu "Anggota Komunitas" — admin akan memeriksa dokumenmu untuk naik ke verifikasi berikutnya.');
     }
 }

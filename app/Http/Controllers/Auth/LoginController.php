@@ -21,7 +21,7 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (! Auth::attempt($data, $request->boolean('remember'))) {
+        if (! Auth::attempt([...$data, 'blocked_at' => null], $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'Email atau kata sandi salah.',
             ]);
@@ -29,7 +29,11 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended($this->homeFor(Auth::user()->role));
+        $user = Auth::user();
+
+        return $user->role !== 'admin' && $user->tutorial_seen_at === null
+            ? redirect()->route('tutorial')
+            : redirect()->intended($this->homeFor($user->role));
     }
 
     public function logout(Request $request)

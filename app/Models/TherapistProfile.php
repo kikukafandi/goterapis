@@ -33,6 +33,7 @@ class TherapistProfile extends Model
         'serves_place' => 'boolean',
         'is_featured' => 'boolean',
         'is_available' => 'boolean',
+        'schedule_configured' => 'boolean',
         'place_photos' => 'array',
         'facilities' => 'array',
         'place_lat' => 'float',
@@ -79,5 +80,15 @@ class TherapistProfile extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function earnings(): HasMany
+    {
+        return $this->hasMany(Earning::class);
+    }
+
+    public function withdrawals(): HasMany
+    {
+        return $this->hasMany(Withdrawal::class);
     }
 }

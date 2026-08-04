@@ -9,6 +9,7 @@
         'foto_tempat' => 'Foto Tempat Praktik', 'rekening' => 'Rekening',
     ];
     $statusBadge = ['pending' => 'bg-kunyit-muda text-kunyit', 'approved' => 'bg-daun-muda text-daun-tua', 'rejected' => 'bg-jahe/15 text-jahe'];
+    $statusLabels = ['pending' => 'Menunggu', 'approved' => 'Disetujui', 'rejected' => 'Ditolak'];
 @endphp
 
 @section('content')
@@ -19,11 +20,9 @@
 <div class="grid gap-6 lg:grid-cols-3">
     {{-- Profil + status --}}
     <div class="space-y-6">
-        <div class="rounded-2xl border border-garis bg-white p-5">
+        <div class="rounded-card border border-garis bg-white p-5">
             <div class="flex items-center gap-3">
-                <span class="grid h-14 w-14 place-items-center rounded-full bg-daun-muda text-xl font-semibold text-daun">
-                    {{ mb_substr($therapist->user->name, 0, 1) }}
-                </span>
+                @if ($therapist->user->avatarUrl())<img src="{{ $therapist->user->avatarUrl() }}" alt="" class="h-14 w-14 rounded-full object-cover">@else<span class="grid h-14 w-14 place-items-center rounded-full bg-daun-muda text-xl font-semibold text-daun">{{ mb_substr($therapist->user->name, 0, 1) }}</span>@endif
                 <div>
                     <p class="font-semibold text-arang">{{ $therapist->user->name }}</p>
                     <p class="text-sm text-kabut">{{ $therapist->user->phone ?? '—' }}</p>
@@ -41,7 +40,7 @@
         </div>
 
         {{-- Ubah status verifikasi --}}
-        <form method="post" action="{{ route('admin.therapist.status', $therapist) }}" class="rounded-2xl border border-garis bg-white p-5">
+        <form method="post" action="{{ route('admin.therapist.status', $therapist) }}" class="rounded-card border border-garis bg-white p-5">
             @csrf @method('patch')
             <p class="font-semibold text-arang">Status verifikasi profil</p>
             <select name="verification_status" class="mt-3 w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm outline-none focus:border-daun">
@@ -59,7 +58,7 @@
 
         {{-- Layanan --}}
         @if ($therapist->services->isNotEmpty())
-            <div class="rounded-2xl border border-garis bg-white p-5">
+            <div class="rounded-card border border-garis bg-white p-5">
                 <p class="font-semibold text-arang">Layanan & harga</p>
                 <ul class="mt-3 space-y-2 text-sm">
                     @foreach ($therapist->services as $s)
@@ -75,19 +74,18 @@
 
     {{-- Dokumen --}}
     <div class="lg:col-span-2">
-        <div class="rounded-2xl border border-garis bg-white p-5">
+        <div class="rounded-card border border-garis bg-white p-5">
             <p class="font-semibold text-arang">Dokumen ({{ $therapist->documents->count() }})</p>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 @forelse ($therapist->documents as $doc)
                     <div class="overflow-hidden rounded-xl border border-garis">
-                        <a href="{{ Storage::url($doc->path) }}" target="_blank" class="block">
-                            <img src="{{ Storage::url($doc->path) }}" alt="{{ $docLabels[$doc->type] ?? $doc->type }}"
-                                 class="h-40 w-full bg-kertas object-cover">
+                        <a href="{{ route('admin.document.download', $doc) }}" class="flex h-40 items-center justify-center bg-kertas text-sm font-semibold text-daun hover:text-daun-tua">
+                            Unduh dokumen privat
                         </a>
                         <div class="p-3">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-semibold text-arang">{{ $docLabels[$doc->type] ?? $doc->type }}</span>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $statusBadge[$doc->status] }}">{{ ucfirst($doc->status) }}</span>
+                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $statusBadge[$doc->status] }}">{{ $statusLabels[$doc->status] ?? $doc->status }}</span>
                             </div>
                             @if ($doc->note)<p class="mt-1 text-xs text-jahe">{{ $doc->note }}</p>@endif
                             <div class="mt-3 flex gap-2">
@@ -107,7 +105,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-sm text-kabut">Belum ada dokumen diunggah.</p>
+                    <div class="py-10 text-center sm:col-span-2"><span class="mx-auto grid h-11 w-11 place-items-center rounded-full bg-daun-muda text-daun"><x-icon name="clipboard" class="h-5 w-5" /></span><p class="mt-3 text-sm font-semibold text-arang">Belum ada dokumen</p><p class="mt-1 text-xs text-kabut">Dokumen terapis akan tampil di area ini setelah diunggah.</p></div>
                 @endforelse
             </div>
         </div>

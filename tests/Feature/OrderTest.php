@@ -7,6 +7,8 @@ use App\Models\Service;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class OrderTest extends TestCase
@@ -63,6 +65,127 @@ class OrderTest extends TestCase
         $this->assertSame(6, strlen($order->start_pin));
     }
 
+    public function test_ketersediaan_tidak_menampilkan_slot_yang_sudah_dipesan(): void
+    {
+        $firstUser = User::factory()->create(['role' => 'user']);
+        $secondUser = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $service = $therapist->services->first();
+        $start = now()->addDay()->setTime(13, 0);
+        Order::create([
+            'code' => 'GT-BOOKED', 'user_id' => $firstUser->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => $start, 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000,
+        ]);
+
+        $response = $this->actingAs($secondUser)->getJson(route('pesan.availability', [
+            'therapist' => $therapist,
+            'date' => $start->format('Y-m-d'),
+            'service_id' => $service->id,
+        ]))->assertOk();
+
+        $values = collect($response->json('slots'))->pluck('value');
+        $this->assertFalse($values->contains($start->format('Y-m-d\TH:i')));
+        $this->assertFalse($values->contains($start->copy()->subMinutes(30)->format('Y-m-d\TH:i')));
+        $this->assertTrue($values->contains($start->copy()->addHour()->format('Y-m-d\TH:i')));
+    }
+
+    public function test_menolak_waktu_di_luar_jadwal_terapis(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $start = now()->addDay()->setTime(13, 0);
+        $therapist->update(['schedule_configured' => true]);
+        $therapist->schedules()->create([
+            'day_of_week' => $start->dayOfWeek,
+            'start_time' => '09:00',
+            'end_time' => '12:00',
+        ]);
+
+        $this->actingAs($user)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id,
+            'model' => 'panggilan',
+            'scheduled_at' => $start->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertSessionHasErrors('scheduled_at');
+
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_menolak_jadwal_yang_bertumpang_tindih(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $service = $therapist->services->first();
+        $start = now()->addDay()->startOfHour();
+        Order::create([
+            'code' => 'GT-OVERLAP', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => $start, 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000,
+        ]);
+
+        $this->actingAs($user)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id,
+            'model' => 'panggilan',
+            'scheduled_at' => $start->copy()->addMinutes(30)->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertSessionHasErrors('scheduled_at');
+
+        $this->assertSame(1, Order::count());
+    }
+
+    public function test_mengizinkan_jadwal_tepat_setelah_pesanan_sebelumnya(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $service = $therapist->services->first();
+        $start = now()->addDay()->startOfHour();
+        Order::create([
+            'code' => 'GT-ADJACENT', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => $start, 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000,
+        ]);
+
+        $this->actingAs($user)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id,
+            'model' => 'panggilan',
+            'scheduled_at' => $start->copy()->addHour()->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertRedirect();
+
+        $this->assertSame(2, Order::count());
+    }
+
+    public function test_mengizinkan_jadwal_yang_sama_dengan_pesanan_batal(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $service = $therapist->services->first();
+        $start = now()->addDay()->startOfHour();
+        Order::create([
+            'code' => 'GT-CANCELLED', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => $start, 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000, 'status' => 'cancelled',
+        ]);
+
+        $this->actingAs($user)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $service->id,
+            'model' => 'panggilan',
+            'scheduled_at' => $start->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertRedirect();
+
+        $this->assertSame(2, Order::count());
+    }
+
     public function test_menolak_layanan_yang_tidak_ditawarkan_terapis(): void
     {
         $user = User::factory()->create(['role' => 'user']);
@@ -75,7 +198,7 @@ class OrderTest extends TestCase
             'model' => 'panggilan',
             'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
             'address' => 'Jl. Test',
-        ])->assertRedirect()->assertSessionHas('error');
+        ])->assertSessionHasErrors('service_id');
 
         $this->assertSame(0, Order::count());
     }
@@ -182,6 +305,75 @@ class OrderTest extends TestCase
         $this->assertSame('cancelled', $order->status);
         $this->assertNotNull($order->cancelled_at);
         $this->assertSame('refunded', $order->payment->status);
+
+        $this->actingAs($user)->patch(route('pesanan.cancel', $order))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame('cancelled', $order->fresh()->status);
+        $this->assertSame('refunded', $order->payment->fresh()->status);
+    }
+
+    public function test_refund_midtrans_diproses_sebelum_pesanan_dibatalkan(): void
+    {
+        config([
+            'goterapis.gateway' => 'midtrans',
+            'goterapis.cancel_free_hours' => 2,
+            'services.midtrans.server_key' => 'SB-Mid-server-test',
+            'services.midtrans.is_production' => false,
+        ]);
+        Http::fake(['api.sandbox.midtrans.com/*' => Http::response(['status_code' => '200'])]);
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $order = Order::create([
+            'code' => 'GT-REFUND12', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id, 'model' => 'panggilan',
+            'scheduled_at' => now()->addDays(2), 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000, 'status' => 'paid',
+        ]);
+        $order->payment()->create([
+            'gateway' => 'midtrans', 'gateway_ref' => $order->code, 'amount' => 118_000,
+            'status' => 'paid', 'paid_at' => now(),
+        ]);
+
+        $this->actingAs($user)->patch(route('pesanan.cancel', $order))->assertRedirect();
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://api.sandbox.midtrans.com/v2/GT-REFUND12/refund'
+            && $request['refund_key'] === 'refund-GT-REFUND12'
+            && $request['amount'] === 115_000
+            && $request->hasHeader('Authorization', 'Basic '.base64_encode('SB-Mid-server-test:')));
+        $this->assertSame('cancelled', $order->fresh()->status);
+        $this->assertSame('refunded', $order->payment->fresh()->status);
+    }
+
+    public function test_pesanan_tetap_dibayar_bila_refund_midtrans_gagal(): void
+    {
+        config([
+            'goterapis.gateway' => 'midtrans',
+            'services.midtrans.server_key' => 'SB-Mid-server-test',
+        ]);
+        Http::fake(['api.sandbox.midtrans.com/*' => Http::response(['status_code' => '500'], 500)]);
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $order = Order::create([
+            'code' => 'GT-FAILREF1', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id, 'model' => 'panggilan',
+            'scheduled_at' => now()->addDays(2), 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000, 'status' => 'paid',
+        ]);
+        $order->payment()->create([
+            'gateway' => 'midtrans', 'gateway_ref' => $order->code, 'amount' => 118_000,
+            'status' => 'paid', 'paid_at' => now(),
+        ]);
+
+        $this->actingAs($user)->patch(route('pesanan.cancel', $order))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame('paid', $order->payment->fresh()->status);
     }
 
     public function test_tidak_bisa_membatalkan_pesanan_berjalan(): void

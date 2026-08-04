@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Support\Geo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TherapistOrderController extends Controller
 {
@@ -48,7 +49,7 @@ class TherapistOrderController extends Controller
             return $stop;
         }
 
-        $order->update(['status' => 'pending_payment', 'accepted_at' => now()]);
+        $order->changeStatus('pending_payment', 'Terapis menerima pesanan.', ['accepted_at' => now()]);
 
         return back()->with('success', "Pesanan {$order->code} diterima. Menunggu pembayaran pelanggan.");
     }
@@ -64,8 +65,7 @@ class TherapistOrderController extends Controller
             'cancel_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $order->update([
-            'status' => 'rejected',
+        $order->changeStatus('rejected', 'Terapis menolak pesanan.', [
             'cancelled_at' => now(),
             'cancel_reason' => $data['cancel_reason'] ?? null,
         ]);
@@ -73,14 +73,43 @@ class TherapistOrderController extends Controller
         return back()->with('success', "Pesanan {$order->code} ditolak.");
     }
 
+    public function enRoute(Request $request, Order $order)
+    {
+        if ($stop = $this->guardOwner($request, $order)) {
+            return $stop;
+        }
+        if ($order->status !== 'paid' || $order->model !== 'panggilan') {
+            return back()->with('error', 'Status OTW hanya tersedia untuk layanan panggilan yang sudah dibayar.');
+        }
+
+        $order->changeStatus('therapist_en_route', 'Terapis sedang menuju lokasi pelanggan.');
+
+        return back()->with('success', "Status pesanan {$order->code} diubah menjadi OTW.");
+    }
+
+    public function arrive(Request $request, Order $order)
+    {
+        if ($stop = $this->guardOwner($request, $order)) {
+            return $stop;
+        }
+        if ($order->status !== 'therapist_en_route' || $order->model !== 'panggilan') {
+            return back()->with('error', 'Status tiba hanya tersedia setelah terapis OTW.');
+        }
+
+        $order->changeStatus('therapist_arrived', 'Terapis sudah tiba di lokasi pelanggan.');
+        Cache::forget(TherapistLocationController::cacheKey($order));
+
+        return back()->with('success', "Terapis sudah tiba untuk pesanan {$order->code}.");
+    }
+
     /** Mulai layanan dengan PIN dari pelanggan. */
     public function start(Request $request, Order $order)
     {
-        $profile = $request->user()->therapistProfile;
-        if ($profile === null || $order->therapist_profile_id !== $profile->id) {
-            return redirect()->route('mitra.pesanan')->with('error', 'Pesanan tidak ditemukan.');
+        if ($stop = $this->guardOwner($request, $order)) {
+            return $stop;
         }
-        if ($order->status !== 'paid') {
+        $requiredStatus = $order->model === 'panggilan' ? 'therapist_arrived' : 'paid';
+        if ($order->status !== $requiredStatus) {
             return back()->with('error', 'Pesanan belum bisa dimulai.');
         }
 
@@ -111,7 +140,7 @@ class TherapistOrderController extends Controller
             return back()->with('error', 'PIN salah. Minta PIN yang benar ke pelanggan.');
         }
 
-        $order->update(['status' => 'in_progress', 'started_at' => now()]);
+        $order->changeStatus('in_progress', 'Layanan telah dimulai.', ['started_at' => now()]);
 
         return back()->with('success', "Layanan {$order->code} dimulai.");
     }
@@ -122,13 +151,22 @@ class TherapistOrderController extends Controller
      */
     private function guard(Request $request, Order $order): ?RedirectResponse
     {
+        if ($stop = $this->guardOwner($request, $order)) {
+            return $stop;
+        }
+        if (! in_array($order->status, self::ACTIONABLE, true)) {
+            return back()->with('error', 'Pesanan sudah ditindak sebelumnya.');
+        }
+
+        return null;
+    }
+
+    private function guardOwner(Request $request, Order $order): ?RedirectResponse
+    {
         $profile = $request->user()->therapistProfile;
 
         if ($profile === null || $order->therapist_profile_id !== $profile->id) {
             return redirect()->route('mitra.pesanan')->with('error', 'Pesanan tidak ditemukan.');
-        }
-        if (! in_array($order->status, self::ACTIONABLE, true)) {
-            return back()->with('error', 'Pesanan sudah ditindak sebelumnya.');
         }
 
         return null;

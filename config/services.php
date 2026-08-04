@@ -41,4 +41,9 @@ return [
         'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
     ],
 
+    'whatsapp' => [
+        'url' => env('WHATSAPP_GATEWAY_URL', 'http://127.0.0.1:3100'),
+        'token' => env('WHATSAPP_GATEWAY_TOKEN', env('APP_ENV') === 'local' ? 'goterapis-local' : null),
+    ],
+
 ];

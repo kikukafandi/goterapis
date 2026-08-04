@@ -27,28 +27,24 @@
         ['shield', 'Bayar aman', 'Dana ditahan platform, diteruskan setelah layanan selesai.'],
     ];
 
-    // Contoh kartu terapis (data dummy sampai profil terisi).
-    $samples = [
-        ['nama' => 'Pak Darsono', 'kota' => 'Yogyakarta', 'layanan' => 'Pijat Kebugaran', 'cat' => 'pijat',
-         'status' => 'Terapis Pilihan', 'rating' => '4.9', 'ulasan' => 214, 'harga' => 85000,
-         'img' => '1519823551278-64ac92734fb1', 'model' => 'Panggilan'],
-        ['nama' => 'Bu Sari', 'kota' => 'Yogyakarta', 'layanan' => 'Pijat Relaksasi', 'cat' => 'pijat',
-         'status' => 'Terapis Terdaftar', 'rating' => '4.8', 'ulasan' => 132, 'harga' => 95000,
-         'img' => '1600334129128-685c5582fd35', 'model' => 'Tempat praktik'],
-        ['nama' => 'Pak Hendra', 'kota' => 'Sleman', 'layanan' => 'Bekam Kering', 'cat' => 'bekam',
-         'status' => 'Terapis Berpengalaman', 'rating' => '4.7', 'ulasan' => 88, 'harga' => 70000,
-         'img' => '1556760544-74068565f05c', 'model' => 'Panggilan'],
-        ['nama' => 'Bu Rina', 'kota' => 'Bantul', 'layanan' => 'Totok Wajah', 'cat' => 'lainnya',
-         'status' => 'Terapis Terdaftar', 'rating' => '4.9', 'ulasan' => 176, 'harga' => 110000,
-         'img' => '1512290923902-8a9f81dc236c', 'model' => 'Tempat praktik'],
-        ['nama' => 'Pak Yusuf', 'kota' => 'Yogyakarta', 'layanan' => 'Pijat Refleksi', 'cat' => 'refleksi',
-         'status' => 'Terapis Pilihan', 'rating' => '4.8', 'ulasan' => 143, 'harga' => 80000,
-         'img' => '1620733723572-11c53f73a416', 'model' => 'Panggilan'],
-        ['nama' => 'Bu Wati', 'kota' => 'Sleman', 'layanan' => 'Pijat Kebugaran', 'cat' => 'pijat',
-         'status' => 'Terapis Berpengalaman', 'rating' => '4.7', 'ulasan' => 97, 'harga' => 75000,
-         'img' => '1540555700478-4be289fbecef', 'model' => 'Panggilan'],
-    ];
-    $availableCats = array_values(array_unique(array_column($samples, 'cat')));
+    $samples = $therapists->map(function ($therapist) {
+        $service = $therapist->services->first();
+
+        return [
+            'profile' => $therapist,
+            'nama' => $therapist->user->name,
+            'kota' => $therapist->city,
+            'layanan' => $service?->name ?? 'Layanan terapi',
+            'cat' => $service?->category ?? 'lainnya',
+            'status' => $therapist->statusLabel(),
+            'rating' => number_format($therapist->rating_avg, 1),
+            'ulasan' => $therapist->reviews_count,
+            'harga' => (int) ($service?->pivot?->price ?? 0),
+            'avatar' => $therapist->user->avatar_path,
+            'model' => $therapist->serves_call ? 'Panggilan' : 'Tempat praktik',
+        ];
+    });
+    $availableCats = $samples->pluck('cat')->unique()->values();
 
     // Pencarian populer (pill gaya Fiverr) & statistik social-proof.
     // key = kategori untuk filter inline di section terapis.
@@ -251,7 +247,7 @@
                     {{-- Foto --}}
                     <div class="relative h-56 overflow-hidden">
                         <img
-                            src="{{ $u }}photo-{{ $t['img'] }}{{ $q }}&w=700&h=520"
+                            src="{{ $t['avatar'] ? (str_starts_with($t['avatar'], 'http') ? $t['avatar'] : asset('storage/'.$t['avatar'])) : 'https://ui-avatars.com/api/?name='.urlencode($t['nama']).'&background=e8f3ed&color=276749&size=700' }}"
                             alt="{{ $t['layanan'] }}"
                             loading="lazy"
                             class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -380,7 +376,7 @@
                             </div>
 
                             <a
-                                href="/cari"
+                                href="{{ route('terapis.show', $t['profile']) }}"
                                 class="group/button inline-flex items-center gap-2 rounded-full bg-daun px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-daun-tua hover:shadow-md"
                             >
                                 Lihat profil

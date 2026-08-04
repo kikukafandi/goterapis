@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\PaymentGateway;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Service;
@@ -40,8 +41,22 @@ class PaymentTest extends TestCase
         ]);
     }
 
+    public function test_konfigurasi_pembayaran_produksi_gagal_bila_midtrans_tidak_lengkap(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        config([
+            'goterapis.gateway' => 'simulated',
+            'services.midtrans.server_key' => null,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->app->make(PaymentGateway::class);
+    }
+
     public function test_pengguna_membayar_pesanan(): void
     {
+        config(['goterapis.gateway' => 'simulated']);
+
         $user = User::factory()->create(['role' => 'user']);
         $order = $this->pendingOrder($user);
 

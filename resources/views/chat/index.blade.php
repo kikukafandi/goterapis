@@ -6,6 +6,8 @@
         'pending_confirmation' => 'Menunggu konfirmasi terapis',
         'pending_payment' => 'Menunggu pembayaran',
         'paid' => 'Sudah dibayar',
+        'therapist_en_route' => 'Terapis sedang OTW',
+        'therapist_arrived' => 'Terapis sudah tiba',
         'accepted' => 'Diterima terapis',
         'rejected' => 'Ditolak terapis',
         'in_progress' => 'Sedang berlangsung',
