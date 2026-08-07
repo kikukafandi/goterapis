@@ -149,14 +149,14 @@ class TherapistOrderTest extends TestCase
 
         $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
             ->assertOk()
-            ->assertSee('Saya sudah tiba')
-            ->assertDontSee('PIN 6 digit');
+            ->assertSee('Saya tiba')
+            ->assertDontSee('PIN dari pasien');
 
         $order->update(['status' => 'therapist_arrived']);
 
         $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
             ->assertOk()
-            ->assertSee('PIN 6 digit');
+            ->assertSee('PIN dari pasien');
     }
 
     public function test_terapis_di_titik_pelanggan_bisa_mulai(): void
