@@ -1,158 +1,149 @@
 @extends('layouts.admin')
-@section('title', 'Ringkasan Operasional')
-@section('heading', 'Ringkasan Operasional')
+@section('title', 'Dashboard')
+@section('heading', 'Dashboard')
+@section('subheading', 'Ringkasan platform dan antrean yang menunggu tindakanmu')
 @section('content')
 @php
-    $needsAttention = $stats['pending_docs'] + $stats['open_reports'];
-    $statusCounts = $latest->countBy('verification_status');
-    $latestCount = $latest->count();
-    $metrics = [
-        ['label' => 'Total pesanan', 'value' => $stats['orders'], 'icon' => 'clipboard', 'note' => 'Seluruh transaksi tercatat'],
-        ['label' => 'Total pengguna', 'value' => $stats['users'], 'icon' => 'user', 'note' => 'Akun pelanggan terdaftar'],
-        ['label' => 'Total terapis', 'value' => $stats['therapists'], 'icon' => 'leaf', 'note' => 'Seluruh mitra terdaftar', 'href' => route('admin.therapists')],
-        ['label' => 'Total produk', 'value' => $stats['products'], 'icon' => 'image', 'note' => 'Item dalam katalog', 'href' => route('admin.products.index')],
+    $butuhTindakan = $stats['pending_docs'] + $stats['open_reports'] + $stats['pending_withdrawals'];
+
+    $kartuStatistik = [
+        ['label' => 'Pengguna', 'value' => $stats['users'], 'note' => 'Akun role user'],
+        ['label' => 'Terapis', 'value' => $stats['therapists'], 'note' => 'Profil mitra terdaftar'],
+        ['label' => 'Dokumen menunggu', 'value' => $stats['pending_docs'], 'note' => 'Belum ditinjau', 'awas' => true],
+        ['label' => 'Pesanan', 'value' => $stats['orders'], 'note' => 'Sepanjang waktu'],
+        ['label' => 'Produk', 'value' => $stats['products'], 'note' => 'Katalog toko'],
+        ['label' => 'Banner aktif', 'value' => $stats['active_banners'], 'note' => 'Sedang tayang'],
+        ['label' => 'Laporan terbuka', 'value' => $stats['open_reports'], 'note' => 'Perlu ditindak', 'awas' => true],
     ];
-    $statusStyles = [
-        'anggota' => 'bg-kabut',
-        'identitas' => 'bg-daun',
-        'berpengalaman' => 'bg-kunyit',
-        'terdaftar' => 'bg-daun-tua',
-        'pilihan' => 'bg-jahe',
+
+    $antrean = [
+        [
+            'label' => 'Dokumen menunggu tinjauan',
+            'note' => 'Dari pendaftaran terapis baru',
+            'count' => $stats['pending_docs'],
+            'dot' => 'bg-jahe-terang',
+            'href' => route('admin.therapists'),
+        ],
+        [
+            'label' => 'Penarikan menunggu',
+            'note' => 'Total Rp'.number_format($stats['pending_withdrawal_total'], 0, ',', '.'),
+            'count' => $stats['pending_withdrawals'],
+            'dot' => 'bg-kunyit',
+            'href' => route('admin.withdrawals.index'),
+        ],
+        [
+            'label' => 'Laporan pengguna terbuka',
+            'note' => 'Sengketa pesanan',
+            'count' => $stats['open_reports'],
+            'dot' => 'bg-jahe-terang',
+            'href' => route('admin.therapists'),
+        ],
+    ];
+
+    $konten = [
+        ['label' => 'Produk aktif', 'value' => $stats['products']],
+        ['label' => 'Banner tayang', 'value' => $stats['active_banners']],
+        ['label' => 'Artikel terbit', 'value' => $stats['articles']],
     ];
 @endphp
 
-<div class="space-y-6">
-    <header class="flex flex-col gap-4 border-b border-garis pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="text-sm font-medium text-kabut">Selamat datang, {{ auth()->user()->name }}</p>
-            <h2 class="mt-1 font-display text-2xl font-bold text-arang sm:text-3xl">Ringkasan Operasional</h2>
-            <p class="mt-1.5 max-w-2xl text-sm leading-6 text-kabut">Pantau kondisi platform, antrean verifikasi, dan aktivitas mitra GoTerapis.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex min-h-10 items-center gap-2 rounded-full border border-garis bg-white px-4 text-xs font-semibold text-kabut">
-                <x-icon name="calendar" class="h-4 w-4 text-daun" /> {{ now()->translatedFormat('l, d F Y') }}
-            </span>
-            <a href="{{ route('admin.therapists') }}" class="inline-flex min-h-10 items-center gap-2 rounded-full bg-daun px-4 text-sm font-semibold text-white transition-colors hover:bg-daun-tua">
-                Tinjau terapis <x-icon name="arrow-right" class="h-4 w-4" />
-            </a>
-        </div>
-    </header>
+<div class="flex flex-col gap-6">
 
-    <section aria-labelledby="attention-heading" class="rounded-card border {{ $needsAttention ? 'border-kunyit/50 bg-kunyit-muda/50' : 'border-daun/20 bg-daun-muda/60' }} p-5 sm:p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex gap-3">
-                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl {{ $needsAttention ? 'bg-kunyit text-arang' : 'bg-daun text-white' }}">
-                    <x-icon name="shield" class="h-5 w-5" />
-                </span>
-                <div>
-                    <h3 id="attention-heading" class="font-display text-lg font-bold text-arang">Perlu Ditindaklanjuti</h3>
-                    <p class="mt-1 text-sm text-kabut">{{ $needsAttention ? 'Beberapa aktivitas membutuhkan pemeriksaan admin.' : 'Tidak ada antrean yang membutuhkan perhatian saat ini.' }}</p>
-                </div>
+    {{-- Kartu statistik --}}
+    <div class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach ($kartuStatistik as $s)
+            <div class="kartu flex flex-col gap-2.5 p-5">
+                <span class="text-[11px] font-semibold text-kabut-muda">{{ $s['label'] }}</span>
+                <span class="font-display text-3xl font-extrabold {{ ($s['awas'] ?? false) && $s['value'] > 0 ? 'text-jahe' : 'text-arang' }}">{{ number_format($s['value'], 0, ',', '.') }}</span>
+                <span class="text-[11px] font-medium leading-snug text-kabut-samar">{{ $s['note'] }}</span>
             </div>
-            <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[34rem]">
-                <a href="{{ route('admin.therapists') }}" class="group flex items-center gap-3 rounded-xl border border-garis bg-white p-3.5 transition-colors hover:border-daun">
-                    <span class="grid h-9 w-9 place-items-center rounded-lg bg-daun-muda text-daun"><x-icon name="clipboard" class="h-4 w-4" /></span>
-                    <div class="min-w-0 flex-1"><p class="text-xl font-bold leading-none text-arang">{{ number_format($stats['pending_docs'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-kabut">Dokumen menunggu tinjauan</p></div>
-                    <x-icon name="arrow-right" class="h-4 w-4 text-kabut group-hover:text-daun" />
-                </a>
-                <div class="flex items-center gap-3 rounded-xl border border-garis bg-white p-3.5">
-                    <span class="grid h-9 w-9 place-items-center rounded-lg bg-kunyit-muda text-kunyit"><x-icon name="shield" class="h-4 w-4" /></span>
-                    <div class="min-w-0 flex-1"><p class="text-xl font-bold leading-none text-arang">{{ number_format($stats['open_reports'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-kabut">Laporan terbuka</p></div>
-                    <span class="rounded-full bg-kertas px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-kabut">Pantau</span>
-                </div>
-            </div>
-        </div>
-    </section>
+        @endforeach
 
-    <section aria-labelledby="platform-heading">
-        <div class="mb-3 flex items-end justify-between gap-4">
-            <div><h3 id="platform-heading" class="font-display text-lg font-bold text-arang">Kondisi platform</h3><p class="mt-0.5 text-xs text-kabut">Total data yang tercatat hingga hari ini.</p></div>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ($metrics as $metric)
-                @if (isset($metric['href']))<a href="{{ $metric['href'] }}" class="group rounded-card border border-garis bg-white p-4 transition-colors hover:border-daun">@else<div class="rounded-card border border-garis bg-white p-4">@endif
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="grid h-9 w-9 place-items-center rounded-xl bg-daun-muda text-daun"><x-icon :name="$metric['icon']" class="h-4 w-4" /></span>
-                        @if (isset($metric['href']))<x-icon name="arrow-right" class="h-4 w-4 text-garis transition-colors group-hover:text-daun" />@endif
-                    </div>
-                    <p class="mt-4 text-2xl font-bold leading-none text-arang sm:text-3xl">{{ number_format($metric['value'], 0, ',', '.') }}</p>
-                    <p class="mt-2 text-sm font-semibold text-arang">{{ $metric['label'] }}</p>
-                    <p class="mt-0.5 text-xs text-kabut">{{ $metric['note'] }}</p>
-                @if (isset($metric['href']))</a>@else</div>@endif
-            @endforeach
-        </div>
-    </section>
-
-    <div class="grid gap-6 xl:grid-cols-12">
-        <section aria-labelledby="latest-heading" class="overflow-hidden rounded-card border border-garis bg-white xl:col-span-8">
-            <div class="flex items-start justify-between gap-4 border-b border-garis px-5 py-4 sm:px-6">
-                <div><h3 id="latest-heading" class="font-display text-lg font-bold text-arang">Terapis terbaru</h3><p class="mt-1 text-xs text-kabut">Pendaftaran mitra terbaru dan status pemeriksaannya.</p></div>
-                <a href="{{ route('admin.therapists') }}" class="shrink-0 text-sm font-semibold text-daun hover:underline">Lihat semua</a>
-            </div>
-            <div>
-                @forelse ($latest as $therapist)
-                    <a href="{{ route('admin.therapist', $therapist) }}" class="group flex flex-col gap-3 border-b border-garis px-5 py-4 transition-colors last:border-0 hover:bg-kertas sm:flex-row sm:items-center sm:px-6">
-                        <div class="flex min-w-0 flex-1 items-center gap-3">
-                            @if ($therapist->user->avatarUrl())
-                                <img src="{{ $therapist->user->avatarUrl() }}" alt="" loading="lazy" class="h-11 w-11 shrink-0 rounded-full object-cover">
-                            @else
-                                <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-daun-muda font-bold text-daun">{{ mb_substr($therapist->user->name, 0, 1) }}</span>
-                            @endif
-                            <div class="min-w-0"><p class="truncate text-sm font-semibold text-arang">{{ $therapist->user->name }}</p><p class="mt-0.5 truncate text-xs text-kabut">{{ $therapist->city ?? 'Wilayah belum diisi' }} · Terdaftar {{ $therapist->created_at->diffForHumans() }}</p></div>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <span class="rounded-full bg-daun-muda px-2.5 py-1 text-[11px] font-semibold text-daun-tua">{{ $therapist->statusLabel() }}</span>
-                            @if ($therapist->pending_count)
-                                <span class="rounded-full bg-kunyit-muda px-2.5 py-1 text-[11px] font-semibold text-arang">{{ $therapist->pending_count }} dokumen menunggu</span>
-                            @else
-                                <span class="rounded-full bg-kertas px-2.5 py-1 text-[11px] font-medium text-kabut">Dokumen tertangani</span>
-                            @endif
-                            <x-icon name="arrow-right" class="hidden h-4 w-4 text-garis transition-colors group-hover:text-daun sm:block" />
-                        </div>
-                    </a>
-                @empty
-                    <div class="px-6 py-12 text-center"><span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-daun-muda text-daun"><x-icon name="user" class="h-5 w-5" /></span><p class="mt-3 text-sm font-semibold text-arang">Belum ada terapis terdaftar</p><p class="mt-1 text-xs text-kabut">Pendaftaran terapis baru akan muncul di sini.</p></div>
-                @endforelse
-            </div>
-        </section>
-
-        <div class="space-y-6 xl:col-span-4">
-            <section aria-labelledby="distribution-heading" class="rounded-card border border-garis bg-white p-5">
-                <div><h3 id="distribution-heading" class="font-display text-lg font-bold text-arang">Status pendaftaran terbaru</h3><p class="mt-1 text-xs text-kabut">Distribusi dari {{ $latestCount }} terapis terbaru.</p></div>
-                @if ($latestCount)
-                    <div class="mt-5 flex h-2.5 overflow-hidden rounded-full bg-kertas" aria-hidden="true">
-                        @foreach ($statusCounts as $status => $count)<span class="{{ $statusStyles[$status] ?? 'bg-kabut' }}" style="width: {{ ($count / $latestCount) * 100 }}%"></span>@endforeach
-                    </div>
-                    <div class="mt-5 space-y-3">
-                        @foreach ($statusCounts as $status => $count)
-                            <div class="flex items-center gap-3 text-sm"><span class="h-2.5 w-2.5 rounded-full {{ $statusStyles[$status] ?? 'bg-kabut' }}"></span><span class="min-w-0 flex-1 truncate text-kabut">{{ \App\Models\TherapistProfile::STATUS_LABELS[$status] ?? $status }}</span><strong class="text-arang">{{ $count }}</strong></div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="mt-5 rounded-xl bg-kertas p-5 text-center"><p class="text-sm font-semibold text-arang">Data belum tersedia</p><p class="mt-1 text-xs leading-5 text-kabut">Distribusi status akan tampil setelah ada pendaftaran terapis.</p></div>
-                @endif
-            </section>
-
-            <section aria-labelledby="store-heading" class="rounded-card border border-garis bg-daun-tua p-5 text-white">
-                <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.16em] text-kunyit">Etalase</p><h3 id="store-heading" class="mt-1 font-display text-lg font-bold">Kontrol toko</h3></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-white/10"><x-icon name="image" class="h-5 w-5" /></span></div>
-                <div class="mt-5 grid grid-cols-2 gap-2">
-                    <a href="{{ route('admin.products.index') }}" class="rounded-xl bg-white/10 p-3 transition-colors hover:bg-white/15"><p class="text-xl font-bold">{{ number_format($stats['products'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-white/70">Produk katalog</p></a>
-                    <a href="{{ route('admin.banners.index') }}" class="rounded-xl bg-white/10 p-3 transition-colors hover:bg-white/15"><p class="text-xl font-bold">{{ number_format($stats['active_banners'], 0, ',', '.') }}</p><p class="mt-1 text-xs text-white/70">Banner aktif</p></a>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold"><a href="{{ route('admin.products.index') }}" class="text-kunyit hover:underline">Kelola produk</a><a href="{{ route('admin.banners.index') }}" class="text-kunyit hover:underline">Kelola banner</a><a href="{{ route('products.index') }}" target="_blank" rel="noopener" class="text-white/80 hover:text-white">Lihat toko ↗</a></div>
-            </section>
+        <div class="flex flex-col justify-center gap-2.5 rounded-card bg-malam p-5">
+            <span class="text-[11px] font-semibold text-white/50">Butuh tindakanmu</span>
+            <span class="font-display text-3xl font-extrabold text-daun-neon">{{ number_format($butuhTindakan, 0, ',', '.') }}</span>
+            <a href="{{ route('admin.therapists') }}" class="mt-1 rounded-[10px] bg-white/10 py-2.5 text-center text-[11px] font-bold text-white hover:bg-white/20">Tinjau sekarang</a>
         </div>
     </div>
 
-    <section aria-labelledby="insight-heading" class="rounded-card border border-garis bg-white p-5 sm:p-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div><h3 id="insight-heading" class="font-display text-lg font-bold text-arang">Performa transaksi</h3><p class="mt-1 text-xs text-kabut">Grafik pendapatan dan distribusi layanan belum tersedia pada sumber data dashboard saat ini.</p></div>
-            <span class="inline-flex w-fit items-center rounded-full bg-kertas px-3 py-1.5 text-xs font-semibold text-kabut">Menunggu data periode transaksi</span>
+    <div class="grid items-start gap-5 xl:grid-cols-[1.5fr_1fr]">
+
+        {{-- Terapis terbaru --}}
+        <section class="kartu overflow-hidden">
+            <div class="flex items-baseline justify-between gap-4 border-b border-garis-muda px-5 py-5 sm:px-6">
+                <h2 class="font-display text-base font-extrabold text-arang">Terapis terbaru</h2>
+                <a href="{{ route('admin.therapists') }}" class="shrink-0 text-xs font-bold text-daun hover:text-daun-tua">Lihat semua</a>
+            </div>
+
+            <div class="hidden grid-cols-[2fr_1.4fr_1fr_90px] gap-3.5 border-b border-garis-muda bg-kertas-isian px-6 py-3 sm:grid">
+                @foreach (['Terapis', 'Status', 'Bergabung', 'Dokumen'] as $h)
+                    <span class="text-[10px] font-bold uppercase tracking-[.06em] text-kabut-samar">{{ $h }}</span>
+                @endforeach
+            </div>
+
+            @forelse ($latest as $therapist)
+                <a href="{{ route('admin.therapist', $therapist) }}"
+                   class="grid gap-3.5 border-b border-garis-muda px-5 py-3.5 last:border-0 hover:bg-kertas-isian sm:grid-cols-[2fr_1.4fr_1fr_90px] sm:items-center sm:px-6">
+                    <div class="flex min-w-0 items-center gap-3">
+                        @if ($therapist->user->avatarUrl())
+                            <img src="{{ $therapist->user->avatarUrl() }}" alt="" loading="lazy" class="h-9 w-9 shrink-0 rounded-full object-cover">
+                        @else
+                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-daun-muda text-xs font-bold text-daun">{{ mb_substr($therapist->user->name, 0, 1) }}</span>
+                        @endif
+                        <span class="flex min-w-0 flex-col gap-1">
+                            <span class="truncate text-[13px] font-bold text-arang">{{ $therapist->user->name }}</span>
+                            <span class="truncate text-[11px] font-medium text-kabut-samar">{{ $therapist->city ?? 'Wilayah belum diisi' }}</span>
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-semibold {{ $therapist->verification_status === 'pilihan' ? 'text-daun' : 'text-kabut' }}">{{ $therapist->statusLabel() }}</span>
+                    <span class="text-[11px] font-medium text-kabut-muda">{{ $therapist->created_at->translatedFormat('j M Y') }}</span>
+                    @if ($therapist->pending_count)
+                        <span class="justify-self-start rounded-full bg-kunyit-muda px-2.5 py-1.5 text-[10px] font-bold text-kunyit-tua">{{ $therapist->pending_count }} dok</span>
+                    @else
+                        <span class="text-[11px] font-medium text-kabut-samar">—</span>
+                    @endif
+                </a>
+            @empty
+                <div class="flex flex-col items-center gap-3 px-10 py-16 text-center">
+                    <span class="grid h-[76px] w-[76px] place-items-center rounded-full bg-garis-muda text-kabut-samar"><x-icon name="user" class="h-7 w-7" /></span>
+                    <p class="font-display text-base font-extrabold text-arang">Belum ada terapis terdaftar</p>
+                    <p class="max-w-xs text-xs leading-relaxed text-kabut-muda">Pendaftaran mitra baru akan muncul di sini begitu ada yang mendaftar.</p>
+                </div>
+            @endforelse
+        </section>
+
+        <div class="flex flex-col gap-5">
+            {{-- Antrean kerja --}}
+            <section class="kartu flex flex-col gap-4 p-5 sm:p-6">
+                <h2 class="font-display text-base font-extrabold text-arang">Antrean kerja</h2>
+                @foreach ($antrean as $q)
+                    <a href="{{ $q['href'] }}" class="flex items-center gap-3.5 rounded-2xl border border-garis-muda bg-kertas-isian px-4 py-3.5 hover:border-daun-terang">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ $q['count'] > 0 ? $q['dot'] : 'bg-kabut-samar' }}"></span>
+                        <span class="flex min-w-0 flex-1 flex-col gap-1">
+                            <span class="truncate text-[13px] font-bold text-arang">{{ $q['label'] }}</span>
+                            <span class="truncate text-[11px] font-medium text-kabut-samar">{{ $q['note'] }}</span>
+                        </span>
+                        <span class="font-display shrink-0 text-lg font-extrabold text-arang">{{ number_format($q['count'], 0, ',', '.') }}</span>
+                    </a>
+                @endforeach
+            </section>
+
+            {{-- Konten aktif --}}
+            <section class="kartu flex flex-col gap-3.5 p-5 sm:p-6">
+                <h2 class="font-display text-base font-extrabold text-arang">Konten aktif</h2>
+                @foreach ($konten as $c)
+                    <div class="flex items-center justify-between gap-3 border-b border-garis-muda pb-3 last:border-0 last:pb-0">
+                        <span class="text-[13px] font-medium text-kabut">{{ $c['label'] }}</span>
+                        <span class="text-sm font-bold text-arang">{{ number_format($c['value'], 0, ',', '.') }}</span>
+                    </div>
+                @endforeach
+                <div class="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-xs font-bold">
+                    <a href="{{ route('admin.products.index') }}" class="text-daun hover:text-daun-tua">Kelola produk</a>
+                    <a href="{{ route('admin.banners.index') }}" class="text-daun hover:text-daun-tua">Kelola banner</a>
+                    <a href="{{ route('admin.articles.index') }}" class="text-daun hover:text-daun-tua">Kelola artikel</a>
+                </div>
+            </section>
         </div>
-        <div class="mt-5 grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-            <div class="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-garis bg-kertas/60 p-6 text-center"><div><x-icon name="clipboard" class="mx-auto h-6 w-6 text-daun" /><p class="mt-3 text-sm font-semibold text-arang">Belum ada ringkasan berkala</p><p class="mt-1 max-w-sm text-xs leading-5 text-kabut">Total pesanan saat ini {{ number_format($stats['orders'], 0, ',', '.') }}. Grafik akan akurat setelah data periode tersedia.</p></div></div>
-            <div class="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-garis bg-kertas/60 p-6 text-center"><div><x-icon name="clipboard" class="mx-auto h-6 w-6 text-daun" /><p class="mt-3 text-sm font-semibold text-arang">Distribusi layanan belum tersedia</p><p class="mt-1 max-w-sm text-xs leading-5 text-kabut">Kategori layanan belum disertakan dalam data dashboard.</p></div></div>
-        </div>
-    </section>
+    </div>
 </div>
 @endsection

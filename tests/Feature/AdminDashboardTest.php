@@ -39,12 +39,13 @@ class AdminDashboardTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Ringkasan Operasional')
-            ->assertSee('Perlu Ditindaklanjuti')
+            ->assertSee('Ringkasan platform dan antrean yang menunggu tindakanmu')
+            ->assertSee('Butuh tindakanmu')
+            ->assertSee('Antrean kerja')
             ->assertSee('Dokumen menunggu tinjauan')
-            ->assertSee('Laporan terbuka')
+            ->assertSee('Laporan pengguna terbuka')
             ->assertSee($therapistUser->name)
-            ->assertSee('Status pendaftaran terbaru');
+            ->assertSee('Terapis terbaru');
     }
 
     public function test_dashboard_memiliki_empty_state_yang_informatif(): void
@@ -53,9 +54,9 @@ class AdminDashboardTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Tidak ada antrean yang membutuhkan perhatian saat ini.')
             ->assertSee('Belum ada terapis terdaftar')
-            ->assertSee('Belum ada ringkasan berkala');
+            ->assertSee('Pendaftaran mitra baru akan muncul di sini begitu ada yang mendaftar.')
+            ->assertSee('Konten aktif');
     }
 
     public function test_pengguna_biasa_tidak_dapat_membuka_dashboard_admin(): void

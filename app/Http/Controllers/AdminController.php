@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\PromotionBanner;
@@ -9,6 +10,7 @@ use App\Models\Report;
 use App\Models\TherapistDocument;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -23,6 +25,9 @@ class AdminController extends Controller
             'products' => Product::count(),
             'active_banners' => PromotionBanner::visible()->count(),
             'open_reports' => Report::where('status', 'open')->count(),
+            'pending_withdrawals' => Withdrawal::where('status', 'requested')->count(),
+            'pending_withdrawal_total' => (int) Withdrawal::where('status', 'requested')->sum('amount'),
+            'articles' => Article::count(),
         ];
 
         $latest = TherapistProfile::with('user')

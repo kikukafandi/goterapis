@@ -3,76 +3,114 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#2e5a39">
+    <meta name="theme-color" content="#101410">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin') — GoTerapis</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="min-h-dvh bg-kertas antialiased" x-data="{ nav: false }">
+<body class="min-h-dvh bg-kertas-app antialiased" x-data="{ nav: false }">
 @php
+    // Angka antrean di sidebar — dipakai di semua layar admin.
+    $antreanDokumen = \App\Models\TherapistDocument::where('status', 'pending')->count();
+    $antreanPenarikan = \App\Models\Withdrawal::where('status', 'requested')->count();
+
     $menu = [
-        ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'icon' => 'home', 'active' => request()->routeIs('admin.dashboard')],
-        ['label' => 'Verifikasi Terapis', 'href' => route('admin.therapists'), 'icon' => 'shield', 'active' => request()->routeIs('admin.therapist*')],
-        ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'icon' => 'wallet', 'active' => request()->routeIs('admin.withdrawals.*')],
-        ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'icon' => 'clipboard', 'active' => request()->routeIs('admin.articles.*')],
-        ['label' => 'Produk', 'href' => route('admin.products.index'), 'icon' => 'leaf', 'active' => request()->routeIs('admin.products.*')],
-        ['label' => 'Banner Promosi', 'href' => route('admin.banners.index'), 'icon' => 'image', 'active' => request()->routeIs('admin.banners.*')],
-        ['label' => 'WhatsApp', 'href' => route('admin.whatsapp'), 'icon' => 'phone', 'active' => request()->routeIs('admin.whatsapp')],
+        ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard')],
+        ['label' => 'Terapis', 'href' => route('admin.therapists'), 'active' => request()->routeIs('admin.therapist*'), 'count' => $antreanDokumen],
+        ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'active' => request()->routeIs('admin.withdrawals.*'), 'count' => $antreanPenarikan],
+        ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*')],
+        ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*')],
+        ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*')],
+        ['label' => 'WhatsApp Gateway', 'href' => route('admin.whatsapp'), 'active' => request()->routeIs('admin.whatsapp')],
     ];
 @endphp
 
-{{-- Sidebar --}}
-<aside class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full overflow-y-auto border-r border-garis bg-white transition-transform lg:translate-x-0"
+{{-- Sidebar gelap --}}
+<aside class="fixed inset-y-0 left-0 z-40 flex w-60 -translate-x-full flex-col gap-7 overflow-y-auto bg-malam p-4 transition-transform lg:translate-x-0"
        :class="nav && 'translate-x-0'">
-    <div class="flex items-center justify-between px-5 py-4">
-        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 font-display text-xl font-semibold text-daun">
-            <span class="grid h-7 w-7 place-items-center rounded-lg border border-daun text-[10px] font-bold">GT</span> GoTerapis
+    <div class="flex items-center gap-3 px-1.5 pt-1">
+        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white p-1">
+                <x-logo class="h-full" />
+            </span>
+            <span class="flex flex-col gap-1">
+                <span class="font-display text-sm font-extrabold text-white">GoTerapis</span>
+                <span class="text-[10px] font-semibold tracking-[.06em] text-daun-neon">ADMIN</span>
+            </span>
         </a>
-        <button @click="nav = false" class="grid h-10 w-10 place-items-center rounded-full hover:bg-kertas lg:hidden" aria-label="Tutup menu"><x-icon name="close" class="h-5 w-5 text-kabut" /></button>
+        <button @click="nav = false" class="ml-auto grid h-9 w-9 place-items-center rounded-full text-white/60 hover:bg-white/10 lg:hidden" aria-label="Tutup menu">
+            <x-icon name="close" class="h-5 w-5" />
+        </button>
     </div>
-    <p class="px-5 pb-2 pt-3 text-xs font-bold uppercase tracking-wide text-kabut">Admin</p>
-    <nav class="space-y-1 px-3">
+
+    <nav class="flex flex-col gap-0.5">
         @foreach ($menu as $m)
             <a href="{{ $m['href'] }}"
-               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold {{ $m['active'] ? 'bg-daun text-white' : 'text-arang hover:bg-kertas' }}">
-                <x-icon :name="$m['icon']" class="h-5 w-5" /> {{ $m['label'] }}
+               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold {{ $m['active'] ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5' }}">
+                <span class="h-[7px] w-[7px] shrink-0 rounded-full {{ $m['active'] ? 'bg-daun-neon' : 'bg-white/20' }}"></span>
+                <span class="flex-1">{{ $m['label'] }}</span>
+                @if (($m['count'] ?? 0) > 0)
+                    <span class="min-w-5 rounded-full bg-jahe-terang px-1.5 text-center text-[10px] font-bold leading-5 text-white">{{ $m['count'] }}</span>
+                @endif
             </a>
         @endforeach
     </nav>
+
+    <div class="mt-auto flex items-center gap-3 rounded-2xl bg-white/5 p-3">
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-bold text-daun-neon">
+            {{ Str::upper(Str::substr(auth()->user()->name, 0, 2)) }}
+        </span>
+        <span class="flex min-w-0 flex-1 flex-col gap-1">
+            <span class="truncate text-xs font-bold text-white">{{ auth()->user()->name }}</span>
+            <span class="truncate text-[10px] font-medium text-white/45">{{ auth()->user()->email }}</span>
+        </span>
+        <form method="post" action="{{ route('logout') }}">
+            @csrf
+            <button class="grid h-8 w-8 place-items-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white" aria-label="Keluar" title="Keluar">
+                <x-icon name="arrow-right" class="h-4 w-4" />
+            </button>
+        </form>
+    </div>
 </aside>
-<div x-show="nav" x-cloak @click="nav = false" class="fixed inset-0 z-30 bg-arang/40 lg:hidden"></div>
+<div x-show="nav" x-cloak @click="nav = false" class="fixed inset-0 z-30 bg-arang/50 lg:hidden"></div>
 
 {{-- Konten --}}
-<div class="lg:pl-64">
-    <header class="sticky top-0 z-20 flex items-center gap-3 border-b border-garis bg-white/95 px-4 py-3 backdrop-blur">
-        <button @click="nav = true" class="grid h-10 w-10 place-items-center rounded-full hover:bg-kertas lg:hidden" aria-label="Buka menu"><x-icon name="menu" class="h-6 w-6 text-arang" /></button>
-        <h1 class="font-display text-lg font-semibold text-arang">@yield('heading', 'Admin')</h1>
-        <div class="ml-auto flex items-center gap-3">
-            <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
-                <x-icon name="bell" class="h-5 w-5" />
-                @if ($unread = auth()->user()->unreadNotifications()->count())
-                    <span class="absolute right-0 top-0 min-w-5 rounded-full bg-kunyit px-1 text-center text-[10px] font-bold leading-5 text-arang">{{ $unread > 99 ? '99+' : $unread }}</span>
-                @endif
-            </a>
-            <span class="hidden text-sm text-kabut sm:block">{{ auth()->user()->name }}</span>
-            <form method="post" action="{{ route('logout') }}">
-                @csrf
-                <button class="rounded-full border border-garis px-3 py-1.5 text-sm font-semibold text-arang hover:bg-kertas">Keluar</button>
-            </form>
+<div class="lg:pl-60">
+    <header class="sticky top-0 z-20 flex items-center gap-4 border-b border-garis bg-kertas-app/95 px-4 py-4 backdrop-blur sm:px-8">
+        <button @click="nav = true" class="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-white lg:hidden" aria-label="Buka menu">
+            <x-icon name="menu" class="h-6 w-6 text-arang" />
+        </button>
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <h1 class="font-display truncate text-xl font-extrabold text-arang sm:text-[22px]">@yield('heading', 'Admin')</h1>
+            <p class="truncate text-xs font-medium text-kabut-muda">@yield('subheading', 'Panel pengelola GoTerapis')</p>
         </div>
+        <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-garis bg-white text-arang hover:bg-kertas">
+            <x-icon name="bell" class="h-5 w-5" />
+            @if ($unread = auth()->user()->unreadNotifications()->count())
+                <span class="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-jahe-terang px-1 text-center text-[10px] font-bold leading-[18px] text-white">{{ $unread > 99 ? '99+' : $unread }}</span>
+            @endif
+        </a>
+        <span class="hidden shrink-0 items-center gap-2.5 rounded-xl border border-garis bg-white px-3.5 py-3 md:flex">
+            <span class="denyut h-[7px] w-[7px] rounded-full bg-daun-terang"></span>
+            <span class="text-[11px] font-semibold text-kabut">Gateway Midtrans aktif</span>
+        </span>
     </header>
 
-    <div class="mx-auto w-full max-w-[1500px] px-4 sm:px-6">
+    <div class="mx-auto w-full max-w-[1300px] px-4 sm:px-8">
         @if (session('ok') || session('success'))
-            <div role="status" class="mt-4 flex items-center gap-3 rounded-xl border border-daun/20 bg-daun-muda px-4 py-3 text-sm font-semibold text-daun-tua"><x-icon name="shield" class="h-5 w-5" /> {{ session('ok') ?? session('success') }}</div>
+            <div role="status" class="mt-5 flex items-center gap-3 rounded-xl border border-daun-garis bg-daun-muda px-4 py-3 text-sm font-semibold text-daun-tua">
+                <x-icon name="shield" class="h-5 w-5 shrink-0" /> {{ session('ok') ?? session('success') }}
+            </div>
         @endif
         @if (session('error'))
-            <div role="alert" class="mt-4 flex items-center gap-3 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm font-semibold text-jahe"><x-icon name="shield" class="h-5 w-5" /> {{ session('error') }}</div>
+            <div role="alert" class="mt-5 flex items-center gap-3 rounded-xl border border-jahe-garis bg-jahe-muda px-4 py-3 text-sm font-semibold text-jahe">
+                <x-icon name="shield" class="h-5 w-5 shrink-0" /> {{ session('error') }}
+            </div>
         @endif
     </div>
 
-    <main class="mx-auto w-full max-w-[1500px] p-4 sm:p-6">
+    <main class="mx-auto w-full max-w-[1300px] px-4 py-7 sm:px-8 sm:pb-10">
         @yield('content')
     </main>
 </div>

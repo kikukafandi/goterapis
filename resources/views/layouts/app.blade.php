@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#2e5a39">
+    <meta name="theme-color" content="#2e7d32">
     <title>@yield('title', 'GoTerapis') — Temukan Terapis di Sekitarmu</title>
     <meta name="description" content="@yield('meta', 'Platform komunitas & pemesanan terapis pijat, bekam, kretek, dan refleksi. Cari terapis terpercaya di sekitarmu, atur jadwal, bayar aman.')">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

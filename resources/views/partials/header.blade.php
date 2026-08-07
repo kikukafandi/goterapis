@@ -17,8 +17,8 @@
 >
     <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 lg:gap-6">
         {{-- Logo --}}
-        <a href="/" class="flex shrink-0 items-center gap-2 font-display text-xl font-semibold text-daun">
-            <span class="grid h-7 w-7 place-items-center rounded-lg border border-daun text-[10px] font-bold">GT</span> GoTerapis
+        <a href="/" class="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold text-arang">
+            <x-logo class="h-9" /> GoTerapis
         </a>
 
         {{-- Nav desktop (gaya Upwork: menu + mega-menu) --}}

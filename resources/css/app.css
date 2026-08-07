@@ -5,24 +5,41 @@
 @source '../views';
 
 @theme {
-    /* Tipografi — satu keluarga solid & konsisten */
-    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    /* Tipografi — satu keluarga, bobot 400–800 */
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
     /* Serif redaksional — khusus halaman baca Jurnal */
     --font-serif: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
 
-    /* Palet herbal — blok warna datar, tanpa gradasi */
-    --color-daun: #2e5a39;        /* hijau daun — brand utama */
-    --color-daun-tua: #234a2e;    /* hijau tua — hover/tekan */
-    --color-daun-muda: #e7efe6;   /* tint lembut — chip, badge, latar seksi */
-    --color-kunyit: #d99a2b;      /* turmeric — aksen tunggal */
-    --color-kunyit-muda: #f6ecd4;
-    --color-jahe: #b65c36;        /* clay hangat — dipakai hemat */
-    --color-kertas: #f7f7f1;      /* latar kertas hangat */
-    --color-arang: #1e241f;       /* teks utama */
-    --color-kabut: #5e6b60;       /* teks sekunder */
-    --color-garis: #e4e7df;       /* garis/border */
+    /* Palet daun — blok warna datar, tanpa gradasi */
+    --color-daun: #2e7d32;        /* hijau brand — isian tombol & tautan (kontras aman) */
+    --color-daun-tua: #1f5b1c;    /* hijau tua — hover/tekan */
+    --color-daun-terang: #4fbf17; /* hijau terang — aksen, titik aktif, blok promosi */
+    --color-daun-neon: #8cc63f;   /* hijau neon — aksen di atas blok gelap */
+    --color-daun-muda: #eef8e6;   /* tint lembut — chip, badge, latar seksi */
+    --color-daun-garis: #d5edc2;  /* garis di atas tint */
+
+    --color-kunyit: #ffb800;      /* aksen kuning — bintang rating, status menunggu */
+    --color-kunyit-muda: #fff8e8;
+    --color-kunyit-garis: #f5e3b8;
+    --color-kunyit-tua: #8a6a15;  /* teks di atas tint kuning */
+
+    --color-jahe: #c24a20;        /* clay hangat — tolak, gagal, bahaya */
+    --color-jahe-terang: #d9552b;
+    --color-jahe-muda: #fdeee8;
+    --color-jahe-garis: #f3d2c4;
+
+    --color-kertas: #eff0ed;      /* latar halaman */
+    --color-kertas-app: #f4f5f2;  /* latar kanvas aplikasi/panel */
+    --color-kertas-isian: #f7f8f5;/* latar input & baris tabel */
+    --color-malam: #101410;       /* blok gelap — sidebar admin, kartu ajakan */
+    --color-arang: #141a13;       /* teks utama */
+    --color-kabut: #4a5148;       /* teks sekunder */
+    --color-kabut-muda: #7a8177;  /* meta kecil */
+    --color-kabut-samar: #9aa096; /* placeholder, teks paling redup */
+    --color-garis: #e4e7e1;       /* garis/border */
+    --color-garis-muda: #edefea;  /* pembatas di dalam kartu */
 
     --radius-card: 1.25rem;
 }
@@ -52,8 +69,50 @@
 }
 
 @layer components {
-    /* Judul: Poppins tebal, tracking rapat supaya solid & tegas */
-    .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+    /* Judul: bobot 800, tracking rapat supaya solid & tegas */
+    .font-display { font-family: var(--font-display); letter-spacing: -0.025em; }
+
+    /* Kartu putih standar — dipakai di hampir semua layar */
+    .kartu {
+        background: #fff;
+        border: 1px solid var(--color-garis);
+        border-radius: var(--radius-card);
+    }
+
+    /* Tombol aksi utama */
+    .btn-utama {
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        background: var(--color-daun); color: #fff;
+        font-weight: 700; line-height: 1;
+        padding: 1rem 1.25rem; border-radius: 1rem;
+        box-shadow: 0 8px 20px rgb(46 125 50 / .24);
+    }
+    .btn-utama:hover { background: var(--color-daun-tua); }
+    .btn-utama:disabled { opacity: .5; box-shadow: none; }
+
+    /* Tombol sekunder — garis tipis di atas putih */
+    .btn-garis {
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+        background: #fff; color: var(--color-kabut);
+        border: 1px solid var(--color-garis);
+        font-weight: 600; line-height: 1;
+        padding: 1rem 1.25rem; border-radius: 1rem;
+    }
+    .btn-garis:hover { background: var(--color-kertas-app); }
+
+    /* Kolom isian */
+    .isian {
+        width: 100%;
+        background: var(--color-kertas-isian);
+        border: 1.5px solid var(--color-garis);
+        border-radius: .875rem;
+        padding: .875rem 1rem;
+        font-size: .875rem; font-weight: 500;
+        color: var(--color-arang);
+        outline: none;
+    }
+    .isian::placeholder { color: var(--color-kabut-samar); }
+    .isian:focus { border-color: var(--color-daun-terang); background: #fff; }
 
     /* Chip layanan */
     .chip {
@@ -62,4 +121,8 @@
         font-size: .75rem; font-weight: 600; line-height: 1;
         background: var(--color-daun-muda); color: var(--color-daun-tua);
     }
+
+    /* Denyut lembut untuk indikator "sedang berjalan" & rangka skeleton */
+    @keyframes gt-denyut { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+    .denyut { animation: gt-denyut 1.6s ease-in-out infinite; }
 }
