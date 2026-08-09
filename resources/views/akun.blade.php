@@ -7,6 +7,8 @@
 
     $menu = $user->role === 'therapist'
         ? array_filter([
+            ['label' => 'Panel mitra', 'href' => route('mitra.dashboard')],
+            ['label' => 'Pesanan saya', 'href' => route('pesanan.index')],
             ['label' => 'Edit profil mitra', 'href' => route('mitra.profil.edit')],
             ['label' => 'Pesanan masuk', 'href' => route('mitra.pesanan')],
             ['label' => 'Saldo & penarikan', 'href' => route('mitra.saldo')],
@@ -56,7 +58,7 @@
     @if ($user->role === 'user')
         <a href="/daftar-terapis" class="flex flex-col gap-2 rounded-card bg-malam p-5">
             <span class="font-display text-[17px] font-extrabold text-white">Gabung jadi terapis</span>
-            <span class="text-xs font-medium leading-relaxed text-white/55 text-pretty">Punya keahlian pijat, bekam, atau refleksi? Terima pesanan di sekitarmu dan atur jadwalmu sendiri.</span>
+            <span class="text-xs font-medium leading-relaxed text-white/55 text-pretty">Punya keahlian pijat, bekam, atau terapi tubuh? Terima pesanan di sekitarmu dan atur jadwalmu sendiri.</span>
             <span class="mt-1 text-xs font-bold text-daun-neon">Daftar sekarang →</span>
         </a>
     @endif

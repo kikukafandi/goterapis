@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#101410">
+    <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/brand/logo-mark.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/brand/logo-mark.png') }}">
     <title>@yield('title', 'Admin') — GoTerapis</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>[x-cloak]{display:none!important}</style>
@@ -14,11 +17,14 @@
     // Angka antrean di sidebar — dipakai di semua layar admin.
     $antreanDokumen = \App\Models\TherapistDocument::where('status', 'pending')->count();
     $antreanPenarikan = \App\Models\Withdrawal::where('status', 'requested')->count();
+    $antreanLaporan = \App\Models\Report::whereIn('status', ['open', 'reviewing'])->count();
 
     $menu = [
         ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard')],
         ['label' => 'Terapis', 'href' => route('admin.therapists'), 'active' => request()->routeIs('admin.therapist*'), 'count' => $antreanDokumen],
         ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'active' => request()->routeIs('admin.withdrawals.*'), 'count' => $antreanPenarikan],
+        ['label' => 'Transaksi', 'href' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*')],
+        ['label' => 'Laporan', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'count' => $antreanLaporan],
         ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*')],
         ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*')],
         ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*')],
@@ -97,18 +103,7 @@
         </span>
     </header>
 
-    <div class="mx-auto w-full max-w-[1300px] px-4 sm:px-8">
-        @if (session('ok') || session('success'))
-            <div role="status" class="mt-5 flex items-center gap-3 rounded-xl border border-daun-garis bg-daun-muda px-4 py-3 text-sm font-semibold text-daun-tua">
-                <x-icon name="shield" class="h-5 w-5 shrink-0" /> {{ session('ok') ?? session('success') }}
-            </div>
-        @endif
-        @if (session('error'))
-            <div role="alert" class="mt-5 flex items-center gap-3 rounded-xl border border-jahe-garis bg-jahe-muda px-4 py-3 text-sm font-semibold text-jahe">
-                <x-icon name="shield" class="h-5 w-5 shrink-0" /> {{ session('error') }}
-            </div>
-        @endif
-    </div>
+    <x-notifications />
 
     <main class="mx-auto w-full max-w-[1300px] px-4 py-7 sm:px-8 sm:pb-10">
         @yield('content')

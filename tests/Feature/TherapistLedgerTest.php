@@ -33,6 +33,26 @@ class TherapistLedgerTest extends TestCase
         $this->actingAs($order->therapistProfile->user)->get(route('mitra.saldo'))->assertOk()->assertSee('Rp85.000');
     }
 
+    public function test_scheduler_menyelesaikan_order_setelah_durasi_dan_grace_secara_idempoten(): void
+    {
+        [, $order] = $this->order();
+        $order->update(['started_at' => now()->subHours(4)]);
+
+        $this->assertSame(1, Order::completeFinished());
+        $this->assertSame(0, Order::completeFinished());
+        $this->assertSame('completed', $order->fresh()->status);
+        $this->assertDatabaseCount('earnings', 1);
+    }
+
+    public function test_scheduler_tidak_menyelesaikan_order_sebelum_grace_berakhir(): void
+    {
+        [, $order] = $this->order();
+        $order->update(['started_at' => now()->subHours(2)]);
+
+        $this->assertSame(0, Order::completeFinished());
+        $this->assertSame('in_progress', $order->fresh()->status);
+    }
+
     private function order(): array
     {
         $customer = User::factory()->create(['role' => 'user']);

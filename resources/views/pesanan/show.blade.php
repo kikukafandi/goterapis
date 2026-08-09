@@ -18,7 +18,6 @@
     ];
     $t = $order->therapistProfile;
 
-    // Langkah alur pesanan. Terapis konfirmasi dulu, baru pengguna bayar.
     $steps = [
         ['label' => 'Pesanan dibuat', 'at' => $order->created_at],
         ['label' => 'Diterima terapis', 'at' => $order->accepted_at],
@@ -53,7 +52,6 @@
         'disputed' => 'Pesanan sedang ditinjau admin. Pantau halaman ini untuk pembaruan.',
     ];
 
-    // Warna kartu status mengikuti tahap: selesai = hijau, negatif = clay, berjalan = gelap.
     $heroStyle = match (true) {
         $isNegative => 'bg-jahe-muda border-jahe-garis',
         $order->status === 'completed' => 'bg-daun-muda border-daun-garis',
@@ -63,10 +61,9 @@
 @endphp
 
 @section('content')
-<div class="mx-auto flex max-w-3xl flex-col gap-3.5 px-4 pb-28 pt-5">
+<div class="mx-auto grid max-w-[1160px] grid-cols-1 gap-3.5 px-4 pb-28 pt-5 md:grid-cols-[minmax(0,1fr)_380px] md:gap-6 md:px-8 md:pt-8">
 
-    {{-- Kepala: kembali + nomor pesanan --}}
-    <div class="flex items-center gap-3.5">
+    <div class="flex items-center gap-3.5 md:col-span-2 md:items-end">
         <a href="{{ route('pesanan.index') }}" aria-label="Kembali ke riwayat pesanan"
            class="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-garis bg-white text-arang hover:bg-kertas">←</a>
         <span class="flex min-w-0 flex-col gap-1">
@@ -75,8 +72,7 @@
         </span>
     </div>
 
-    {{-- Kartu status --}}
-    <div class="flex flex-col gap-3 rounded-[22px] border p-5 {{ $heroStyle }}">
+    <div class="flex flex-col gap-3 rounded-card border p-5 md:col-start-1 md:p-7 {{ $heroStyle }}">
         <div class="flex items-center justify-between gap-3">
             <span class="font-display text-lg font-extrabold {{ $heroDark ? 'text-white' : ($isNegative ? 'text-jahe' : 'text-daun-tua') }}">
                 {{ $statusLabels[$order->status] ?? $order->status }}
@@ -91,9 +87,8 @@
         </p>
     </div>
 
-    {{-- Aksi utama sesuai tahap --}}
     @if ($order->status === 'pending_payment' && ! $order->paymentExpired())
-        <form method="post" action="{{ route('pesanan.pay', $order) }}">
+        <form method="post" action="{{ route('pesanan.pay', $order) }}" class="md:col-start-2 md:row-start-2">
             @csrf
             <button class="btn-utama w-full text-[15px]">Bayar sekarang · Rp{{ number_format($order->total, 0, ',', '.') }}</button>
             @if ($batasBayar = $order->paymentDeadline())
@@ -103,15 +98,14 @@
             @endif
         </form>
     @elseif (in_array($order->status, ['paid', 'therapist_en_route', 'therapist_arrived', 'accepted'], true))
-        <div class="flex flex-col items-center gap-2 rounded-card border-[1.5px] border-daun-garis bg-white p-[18px]">
+        <div class="flex flex-col items-center gap-2 rounded-card border-[1.5px] border-daun-garis bg-white p-[18px] md:col-start-2 md:row-start-2 md:self-start md:p-6">
             <span class="text-[11px] font-medium text-kabut-muda">PIN mulai layanan — berikan ke terapis</span>
             <span class="font-display text-[32px] font-extrabold tracking-[.28em] text-daun">{{ $order->start_pin }}</span>
         </div>
     @endif
 
-    {{-- Perjalanan terapis (realtime) --}}
     @if ($order->status === 'therapist_en_route' && $order->model === 'panggilan')
-        <div class="kartu flex items-center gap-3.5 p-4"
+        <div class="kartu flex items-center gap-3.5 p-4 md:col-start-1 md:p-6"
              x-data="{
                 location: @js($therapistLocation), now: Date.now(),
                 init() {
@@ -134,10 +128,9 @@
         </div>
     @endif
 
-    {{-- Ulasan --}}
     @if ($order->status === 'completed')
         @if ($order->review)
-            <div class="kartu flex flex-col gap-2 p-[18px]">
+            <div class="kartu flex flex-col gap-2 p-[18px] md:col-start-2">
                 <span class="text-[11px] font-medium text-kabut-muda">Ulasanmu</span>
                 <div class="flex items-center gap-0.5">
                     @for ($i = 1; $i <= 5; $i++)
@@ -147,7 +140,7 @@
                 @if ($order->review->body)<p class="text-[13px] leading-relaxed text-arang">{{ $order->review->body }}</p>@endif
             </div>
         @else
-            <form method="post" action="{{ route('pesanan.review', $order) }}" class="kartu flex flex-col gap-3 p-[18px]"
+            <form method="post" action="{{ route('pesanan.review', $order) }}" class="kartu flex flex-col gap-3 p-[18px] md:col-start-2 md:p-6"
                   x-data="{ rating: 0, hover: 0 }">
                 @csrf
                 <div class="flex flex-col gap-1">
@@ -170,9 +163,8 @@
         @endif
     @endif
 
-    {{-- Riwayat status --}}
     @unless ($isNegative)
-        <div class="kartu flex flex-col gap-4 p-[18px]">
+        <div class="kartu flex flex-col gap-4 p-[18px] md:col-start-1 md:p-6">
             <span class="text-sm font-bold text-arang">Riwayat status</span>
             <ol>
                 @foreach ($steps as $i => $s)
@@ -201,8 +193,7 @@
         </div>
     @endunless
 
-    {{-- Terapis + aksi kontak --}}
-    <div class="kartu flex flex-col gap-3.5 p-[18px]">
+    <div class="kartu flex flex-col gap-3.5 p-[18px] md:col-start-2 md:row-start-3 md:self-start md:p-6">
         <div class="flex items-center gap-3">
             @if ($t->user->avatarUrl())
                 <img src="{{ $t->user->avatarUrl() }}" alt="" loading="lazy" class="h-[50px] w-[50px] shrink-0 rounded-[15px] object-cover">
@@ -220,14 +211,14 @@
                 <a href="tel:{{ $t->user->phone }}" class="flex-1 rounded-[14px] border-[1.5px] border-garis bg-white py-3.5 text-center text-[13px] font-bold text-arang hover:bg-kertas">Telepon</a>
             @endif
         </div>
+        <x-order-report :$order />
     </div>
 
-    <div id="chat-pesanan" class="scroll-mt-24">
+    <div id="chat-pesanan" class="scroll-mt-24 md:col-start-2">
         <x-order-chat :$order :$messages />
     </div>
 
-    {{-- Detail & biaya --}}
-    <div class="kartu flex flex-col gap-2.5 p-[18px]">
+    <div class="kartu flex flex-col gap-2.5 p-[18px] md:col-start-1 md:p-6">
         <span class="text-sm font-bold text-arang">Detail &amp; biaya</span>
         @foreach ([
             'Model' => $order->model === 'panggilan' ? 'Panggilan ke rumah' : 'Datang ke tempat praktik',
@@ -265,10 +256,9 @@
         </div>
     </div>
 
-    {{-- Pembatalan (sebelum layanan berjalan) --}}
     @if (in_array($order->status, ['pending_confirmation', 'pending_payment', 'paid', 'accepted'], true))
         @php $sudahBayar = in_array($order->status, ['paid', 'accepted'], true); @endphp
-        <div x-data="{ open: false }" class="flex flex-col gap-2.5">
+        <div x-data="{ open: false }" class="flex flex-col gap-2.5 md:col-start-2">
             <button type="button" @click="open = ! open"
                     class="w-full rounded-[14px] border-[1.5px] border-jahe-garis bg-white py-4 text-[13px] font-bold text-jahe hover:bg-jahe-muda">Batalkan pesanan</button>
             <div x-show="open" x-cloak class="kartu flex flex-col gap-2.5 p-[18px]">
@@ -290,7 +280,6 @@
         </div>
     @endif
 
-    {{-- Aksi tetap di bawah saat sesi berjalan --}}
     @if ($order->status === 'in_progress')
         <form method="post" action="{{ route('pesanan.complete', $order) }}"
               class="fixed inset-x-0 bottom-0 z-30 border-t border-garis bg-white px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3.5 md:static md:border-0 md:bg-transparent md:p-0">

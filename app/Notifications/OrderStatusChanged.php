@@ -32,14 +32,14 @@ class OrderStatusChanged extends Notification implements ShouldQueue
 
     public function toArray(object $notifiable): array
     {
-        $therapist = $notifiable->isTherapist();
+        $seller = $this->order->therapistProfile()->where('user_id', $notifiable->id)->exists();
 
         return [
             'order_id' => $this->order->id,
             'code' => $this->order->code,
             'status' => $this->order->status,
             'message' => $this->message,
-            'url' => $therapist ? route('mitra.pesanan.show', $this->order) : route('pesanan.show', $this->order),
+            'url' => $seller ? route('mitra.pesanan.show', $this->order) : route('pesanan.show', $this->order),
         ];
     }
 

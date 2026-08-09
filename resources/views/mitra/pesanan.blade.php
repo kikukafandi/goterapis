@@ -1,130 +1,82 @@
 @extends('layouts.app')
-@section('title', 'Pesanan masuk')
+@section('title', 'Pesanan')
 
 @php
     $statusLabels = [
-        'pending_confirmation' => 'Perlu konfirmasi',
+        'pending_confirmation' => 'Menunggu konfirmasi',
         'pending_payment' => 'Menunggu pembayaran',
         'paid' => 'Sudah dibayar',
         'therapist_en_route' => 'Sedang OTW',
         'therapist_arrived' => 'Sudah tiba',
         'accepted' => 'Diterima',
         'rejected' => 'Ditolak',
-        'in_progress' => 'Berlangsung',
+        'in_progress' => 'Sesi berjalan',
         'completed' => 'Selesai',
         'cancelled' => 'Dibatalkan',
         'refunded' => 'Dana dikembalikan',
         'disputed' => 'Sengketa',
     ];
-    $actionable = ['pending_confirmation'];
+    $badgeClasses = [
+        'pending_confirmation' => 'bg-kunyit-muda text-kunyit-tua',
+        'completed' => 'bg-garis-muda text-kabut',
+        'rejected' => 'bg-jahe-muda text-jahe',
+        'cancelled' => 'bg-jahe-muda text-jahe',
+        'refunded' => 'bg-jahe-muda text-jahe',
+        'disputed' => 'bg-jahe-muda text-jahe',
+    ];
 @endphp
 
 @section('content')
-<div class="mx-auto max-w-2xl px-4 pb-28 pt-6">
-    <h1 class="font-display text-2xl font-bold text-arang">Pesanan masuk</h1>
-    <p class="mt-1 text-sm text-kabut">Tinjau jadwal dan detail pelanggan sebelum menerima atau menolak pesanan.</p>
+<div class="relative overflow-hidden bg-daun-terang px-5 pb-5 pt-4 sm:px-8 sm:pb-6 sm:pt-5">
+    <span class="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/10 lg:-right-20 lg:-top-44 lg:h-96 lg:w-96"></span>
+    <h1 class="font-display mx-auto max-w-6xl text-[22px] font-extrabold text-white sm:text-2xl">Pesanan</h1>
+</div>
 
-    <div class="mt-6 space-y-3">
+<div class="mx-auto max-w-6xl px-5 pb-28 pt-3 sm:px-8 sm:pt-5 lg:pb-16">
+    <nav aria-label="Status pesanan" class="grid grid-cols-3 gap-1.5 rounded-[14px] bg-garis-muda p-1 lg:max-w-xl">
+        @foreach (['baru' => 'Baru', 'berjalan' => 'Berjalan', 'selesai' => 'Selesai'] as $key => $label)
+            <a href="{{ route('mitra.pesanan', ['tab' => $key]) }}"
+               @class([
+                    'rounded-[11px] px-2 py-3 text-center text-xs font-bold transition-colors',
+                    'bg-white text-arang' => $tab === $key,
+                    'text-kabut-muda hover:text-arang' => $tab !== $key,
+                ])
+               @if ($tab === $key) aria-current="page" @endif>{{ $label }}</a>
+        @endforeach
+    </nav>
+
+    <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         @forelse ($orders as $order)
-            <div class="rounded-card border border-garis bg-white p-4 sm:p-5">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <p class="text-sm font-bold text-arang">{{ $order->service->name }} · {{ $order->duration_min }} menit</p>
-                        <p class="text-xs text-kabut">{{ $order->user->name }} · {{ $order->code }}</p>
-                    </div>
-                    <span class="shrink-0 rounded-full bg-kunyit/15 px-2.5 py-1 text-xs font-semibold text-arang">
-                        {{ $statusLabels[$order->status] ?? $order->status }}
+            <a href="{{ route('mitra.pesanan.show', $order) }}" class="kartu block p-[15px] transition-colors hover:border-daun-garis sm:p-4">
+                <div class="flex items-center justify-between gap-2.5">
+                    <span class="font-mono text-[11px] font-semibold text-kabut-samar">{{ $order->code }}</span>
+                    <span @class([
+                        'shrink-0 rounded-full px-2.5 py-2 text-[10px] font-bold',
+                        $badgeClasses[$order->status] ?? 'bg-daun-muda text-daun',
+                    ])>{{ $statusLabels[$order->status] ?? $order->status }}</span>
+                </div>
+                <div class="mt-3 flex items-center gap-3">
+                    @if ($order->user->avatarUrl())
+                        <img src="{{ $order->user->avatarUrl() }}" alt="" loading="lazy" class="h-[46px] w-[46px] shrink-0 rounded-[14px] object-cover">
+                    @else
+                        <span class="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[14px] bg-daun-muda text-sm font-extrabold text-daun">{{ mb_substr($order->user->name, 0, 1) }}</span>
+                    @endif
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate text-sm font-bold text-arang">{{ $order->user->name }}</span>
+                        <span class="mt-1 block truncate text-xs font-medium text-kabut-muda">{{ $order->service->name }} · {{ $order->duration_min }} menit</span>
+                        <span class="mt-1 block truncate text-[11px] font-medium text-kabut-samar">{{ $order->scheduled_at->isToday() ? 'Hari ini' : $order->scheduled_at->translatedFormat('d M') }} · {{ $order->scheduled_at->format('H:i') }} · {{ $order->model === 'panggilan' ? 'Panggilan' : 'Tempat praktik' }}</span>
+                    </span>
+                    <span class="shrink-0 text-right">
+                        <span class="block text-[10px] font-medium text-kabut-samar">Bayaran</span>
+                        <span class="font-display mt-1 block text-[15px] font-extrabold text-arang">Rp{{ number_format($order->payout, 0, ',', '.') }}</span>
                     </span>
                 </div>
-
-                <dl class="mt-3 space-y-1.5 border-t border-garis pt-3 text-sm">
-                    <div class="flex justify-between gap-4"><dt class="text-kabut">Jadwal</dt><dd class="text-right font-semibold text-arang">{{ $order->scheduled_at->translatedFormat('l, d M Y · H:i') }}</dd></div>
-                    <div class="flex justify-between gap-4"><dt class="text-kabut">Model</dt><dd class="text-right font-semibold text-arang">{{ $order->model === 'panggilan' ? 'Panggilan' : 'Tempat praktik' }}</dd></div>
-                    @if ($order->address)
-                        <div class="flex justify-between gap-4"><dt class="text-kabut">Alamat</dt><dd class="text-right text-arang">{{ $order->address }}</dd></div>
-                    @endif
-                    @if ($order->notes)
-                        <div class="flex justify-between gap-4"><dt class="text-kabut">Catatan</dt><dd class="text-right text-arang">{{ $order->notes }}</dd></div>
-                    @endif
-                    <div class="flex justify-between gap-4"><dt class="text-kabut">Bagianmu</dt><dd class="text-right font-bold text-daun">Rp{{ number_format($order->payout, 0, ',', '.') }}</dd></div>
-                </dl>
-
-                <a href="{{ route('mitra.pesanan.show', $order) }}" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-daun hover:underline">
-                    Lihat detail dan percakapan <span aria-hidden="true">→</span>
-                </a>
-
-                @if (in_array($order->status, $actionable, true))
-                    <div class="mt-4 flex gap-2">
-                        <form method="post" action="{{ route('mitra.pesanan.accept', $order) }}" class="flex-1">
-                            @csrf @method('patch')
-                            <button class="w-full rounded-full bg-daun px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-daun-tua">Terima</button>
-                        </form>
-                        <form method="post" action="{{ route('mitra.pesanan.reject', $order) }}" class="flex-1">
-                            @csrf @method('patch')
-                            <button class="w-full rounded-full border border-garis px-4 py-2.5 text-sm font-semibold text-arang transition-colors hover:border-jahe hover:text-jahe">Tolak</button>
-                        </form>
-                    </div>
-                @elseif ($order->status === 'pending_payment')
-                    <p class="mt-4 rounded-xl border border-kunyit/30 bg-kunyit/10 px-4 py-3 text-sm text-arang">
-                        Sudah kamu terima — menunggu pelanggan membayar.
-                        @if ($batasBayar = $order->paymentDeadline())
-                            <span class="mt-0.5 block text-xs text-kabut">Batal otomatis bila belum dibayar sampai {{ $batasBayar->translatedFormat('d M Y · H:i') }}.</span>
-                        @endif
-                    </p>
-                @elseif ($order->status === 'paid' && $order->model === 'panggilan')
-                    <form method="post" action="{{ route('mitra.pesanan.en-route', $order) }}" class="mt-4">
-                        @csrf @method('patch')
-                        <button class="w-full rounded-full bg-kunyit px-4 py-2.5 text-sm font-semibold text-arang">Saya sedang OTW</button>
-                    </form>
-                @elseif ($order->status === 'therapist_en_route' && $order->model === 'panggilan')
-                    <form method="post" action="{{ route('mitra.pesanan.arrive', $order) }}" class="mt-4">
-                        @csrf @method('patch')
-                        <button class="w-full rounded-full bg-kunyit px-4 py-2.5 text-sm font-semibold text-arang">Saya sudah tiba</button>
-                    </form>
-                @elseif (($order->status === 'therapist_arrived' && $order->model === 'panggilan') || ($order->status === 'paid' && $order->model !== 'panggilan'))
-                    <form method="post" action="{{ route('mitra.pesanan.start', $order) }}" class="mt-4"
-                          @submit.prevent="go($el)"
-                          x-data="{
-                            sent: false, loading: false,
-                            go(f) {
-                                if (this.sent) { return }
-                                if (! navigator.geolocation) { this.sent = true; f.submit(); return }
-                                this.loading = true;
-                                navigator.geolocation.getCurrentPosition(
-                                    p => { f.querySelector('[name=lat]').value = p.coords.latitude.toFixed(7);
-                                           f.querySelector('[name=lng]').value = p.coords.longitude.toFixed(7);
-                                           f.querySelector('[name=acc]').value = Math.round(p.coords.accuracy);
-                                           this.sent = true; f.submit(); },
-                                    () => { this.sent = true; f.submit(); },
-                                    { enableHighAccuracy: true, timeout: 10000 }
-                                );
-                            }
-                          }">
-                        @csrf @method('patch')
-                        <input type="hidden" name="lat">
-                        <input type="hidden" name="lng">
-                        <input type="hidden" name="acc">
-                        <label class="block text-sm font-semibold text-arang">Mulai layanan</label>
-                        <p class="mt-0.5 text-xs text-kabut">
-                            Minta 6 digit PIN ke pelanggan.
-                            @if ($order->model === 'panggilan' && $order->lat)Lokasimu dicek harus di titik pelanggan.@endif
-                        </p>
-                        <div class="mt-2 flex gap-2">
-                            <input name="pin" inputmode="numeric" maxlength="6" placeholder="PIN 6 digit" required
-                                   class="w-32 rounded-full border border-garis bg-white px-4 py-2.5 text-center text-sm tracking-widest text-arang outline-none focus:border-daun">
-                            <button class="flex-1 rounded-full bg-daun px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-daun-tua disabled:opacity-60"
-                                    :disabled="loading">
-                                <span x-text="loading ? 'Mengecek lokasi…' : 'Mulai layanan'"></span>
-                            </button>
-                        </div>
-                    </form>
-                @elseif ($order->status === 'in_progress')
-                    <p class="mt-4 rounded-xl border border-daun/25 bg-daun-muda px-4 py-3 text-sm text-daun-tua">Sedang berlangsung — menunggu pelanggan mengonfirmasi selesai.</p>
-                @endif
-            </div>
+            </a>
         @empty
-            <div class="rounded-card border border-garis bg-white p-8 text-center">
-                <p class="text-sm text-kabut">Belum ada pesanan masuk.</p>
+            <div class="kartu px-6 py-10 text-center md:col-span-2 xl:col-span-3">
+                <span class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-daun-muda text-daun"><x-icon name="calendar" class="h-5 w-5" /></span>
+                <p class="mt-3 text-sm font-bold text-arang">Belum ada pesanan {{ $tab }}</p>
+                <p class="mt-1 text-xs leading-relaxed text-kabut-muda">Pesanan akan muncul di sini saat statusnya sesuai.</p>
             </div>
         @endforelse
     </div>

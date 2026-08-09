@@ -90,6 +90,15 @@ class TherapistProfileTest extends TestCase
             ->assertDontSee($user->phone);
     }
 
+    public function test_terapis_belum_disetujui_tidak_tampil_di_pencarian_dan_profil_publik(): void
+    {
+        [$user, $profile] = $this->therapist();
+        $profile->update(['verification_status' => 'anggota']);
+
+        $this->get(route('cari'))->assertOk()->assertDontSee($user->name);
+        $this->get(route('terapis.show', $profile))->assertNotFound();
+    }
+
     private function profileData(User $user, Service $service, array $schedules): array
     {
         return [
@@ -132,7 +141,7 @@ class TherapistProfileTest extends TestCase
             'experience_years' => 5,
             'province' => 'DI Yogyakarta',
             'city' => 'Yogyakarta',
-            'verification_status' => 'anggota',
+            'verification_status' => 'identitas',
             'serves_call' => true,
             'is_available' => true,
         ]);

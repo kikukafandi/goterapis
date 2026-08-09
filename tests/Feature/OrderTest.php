@@ -21,7 +21,7 @@ class OrderTest extends TestCase
         $therapistUser = User::factory()->create(['role' => 'therapist']);
         $profile = TherapistProfile::create([
             'user_id' => $therapistUser->id,
-            'verification_status' => 'anggota',
+            'verification_status' => 'identitas',
             'serves_call' => true,
             'serves_place' => false,
             'city' => 'Yogyakarta',
@@ -225,12 +225,70 @@ class OrderTest extends TestCase
         $this->get(route('pesan.create', $therapist))->assertRedirect(route('login'));
     }
 
-    public function test_melarang_terapis_memesan(): void
+    public function test_terapis_belum_disetujui_tidak_dapat_dipesan(): void
+    {
+        $customer = User::factory()->create();
+        $therapist = $this->bookableTherapist();
+        $therapist->update(['verification_status' => 'anggota']);
+
+        $this->actingAs($customer)->get(route('pesan.create', $therapist))->assertNotFound();
+        $this->actingAs($customer)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id,
+            'model' => 'panggilan',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_terapis_bisa_memesan_terapis_lain(): void
+    {
+        $seller = $this->bookableTherapist();
+        $buyer = User::factory()->create(['role' => 'therapist']);
+        TherapistProfile::create(['user_id' => $buyer->id, 'verification_status' => 'identitas', 'city' => 'Yogyakarta']);
+
+        $this->actingAs($buyer)->get(route('pesan.create', $seller))->assertOk();
+        $this->actingAs($buyer)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $seller->id,
+            'service_id' => $seller->services->first()->id,
+            'model' => 'panggilan',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertRedirect();
+
+        $this->assertSame($buyer->id, Order::first()->user_id);
+    }
+
+    public function test_terapis_tidak_bisa_memesan_diri_sendiri(): void
     {
         $therapist = $this->bookableTherapist();
-        $therapistUser = User::factory()->create(['role' => 'therapist']);
 
-        $this->actingAs($therapistUser)->get(route('pesan.create', $therapist))->assertRedirect(route('home'));
+        $this->actingAs($therapist->user)->get(route('pesan.create', $therapist))->assertForbidden();
+        $this->actingAs($therapist->user)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id,
+            'model' => 'panggilan',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertForbidden();
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_admin_tidak_bisa_memesan(): void
+    {
+        $therapist = $this->bookableTherapist();
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get(route('pesan.create', $therapist))->assertForbidden();
+        $this->actingAs($admin)->post(route('pesanan.store'), [
+            'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id,
+            'model' => 'panggilan',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'address' => 'Jl. Test',
+        ])->assertForbidden();
     }
 
     public function test_pemilik_bisa_melihat_detail_dengan_status(): void
@@ -278,6 +336,26 @@ class OrderTest extends TestCase
         $order->refresh();
         $this->assertSame('completed', $order->status);
         $this->assertNotNull($order->completed_at);
+    }
+
+    public function test_menyelesaikan_pesanan_idempoten_dan_earning_tidak_ganda(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $therapist = $this->bookableTherapist();
+        $order = Order::create([
+            'code' => 'GT-IDEMPOTENT', 'user_id' => $user->id, 'therapist_profile_id' => $therapist->id,
+            'service_id' => $therapist->services->first()->id, 'model' => 'panggilan',
+            'scheduled_at' => now()->addDay(), 'duration_min' => 60,
+            'price' => 100_000, 'transport_fee' => 15_000, 'service_fee' => 3_000,
+            'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000, 'status' => 'in_progress',
+        ]);
+
+        $this->actingAs($user)->patch(route('pesanan.complete', $order))->assertSessionHas('success');
+        $this->actingAs($user)->patch(route('pesanan.complete', $order))->assertSessionHas('error');
+
+        $this->assertSame('completed', $order->fresh()->status);
+        $this->assertDatabaseCount('earnings', 1);
+        $this->assertDatabaseHas('earnings', ['order_id' => $order->id, 'amount' => 100_000]);
     }
 
     public function test_pelanggan_membatalkan_pesanan_dibayar_dan_dana_dikembalikan(): void

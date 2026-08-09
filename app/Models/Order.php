@@ -61,37 +61,60 @@ class Order extends Model
                 ->orWhere('scheduled_at', '<=', now()))
             ->get();
 
-        foreach ($orders as $order) {
-            $order->changeStatus('cancelled', 'Pesanan dibatalkan karena batas pembayaran berakhir.', [
-                'cancelled_at' => now(),
-                'cancel_reason' => 'Pembayaran tidak diselesaikan sampai batas waktu.',
-            ]);
-        }
-
-        return $orders->count();
+        return $orders->sum(fn (Order $order) => (int) $order->changeStatus(
+            'cancelled',
+            'Pesanan dibatalkan karena batas pembayaran berakhir.',
+            ['cancelled_at' => now(), 'cancel_reason' => 'Pembayaran tidak diselesaikan sampai batas waktu.'],
+            ['pending_payment'],
+        ));
     }
 
-    public function changeStatus(string $status, string $message, array $attributes = []): bool
+    public static function completeFinished(): int
     {
-        if ($this->status === $status) {
-            return false;
-        }
+        $graceHours = (int) config('goterapis.completion_grace_hours');
+        $orders = static::where('status', 'in_progress')->whereNotNull('started_at')->get()
+            ->filter(fn (Order $order) => $order->started_at->copy()->addMinutes($order->duration_min)->addHours($graceHours)->isPast());
 
-        $previousStatus = $this->status;
-        DB::transaction(function () use ($status, $message, $attributes, $previousStatus) {
-            $this->update([...$attributes, 'status' => $status]);
-            if ($status === 'completed' && $previousStatus === 'in_progress') {
+        return $orders->sum(fn (Order $order) => (int) $order->changeStatus(
+            'completed',
+            'Pesanan selesai otomatis setelah waktu layanan dan masa tenggang berakhir.',
+            ['completed_at' => $order->started_at->copy()->addMinutes($order->duration_min)],
+            ['in_progress'],
+        ));
+    }
+
+    public function changeStatus(string $status, string $message, array $attributes = [], ?array $from = null): bool
+    {
+        $from ??= [$this->status];
+        $changed = DB::transaction(function () use ($status, $attributes, $from) {
+            $changed = static::whereKey($this->getKey())
+                ->whereIn('status', $from)
+                ->update([...$attributes, 'status' => $status, 'updated_at' => now()]);
+
+            if ($changed === 0) {
+                return false;
+            }
+
+            $this->refresh();
+            if ($status === 'completed') {
                 $this->earning()->firstOrCreate([], [
                     'therapist_profile_id' => $this->therapist_profile_id,
                     'amount' => $this->payout,
                     'available_at' => $this->completed_at->copy()->addDay(),
                 ]);
             }
-            $this->loadMissing(['user', 'therapistProfile.user']);
-            collect([$this->user, $this->therapistProfile?->user])->filter()->unique('id')
-                ->reject(fn (User $user) => $user->is(auth()->user()))
-                ->each->notify(new OrderStatusChanged($this, $message));
+
+            return true;
         });
+
+        if (! $changed) {
+            return false;
+        }
+
+        $this->loadMissing(['user', 'therapistProfile.user']);
+        collect([$this->user, $this->therapistProfile?->user])->filter()->unique('id')
+            ->reject(fn (User $user) => $user->is(auth()->user()))
+            ->each->notify(new OrderStatusChanged($this, $message));
 
         return true;
     }

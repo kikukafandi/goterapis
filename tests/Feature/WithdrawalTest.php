@@ -25,6 +25,17 @@ class WithdrawalTest extends TestCase
         $this->assertDatabaseCount('withdrawals', 0);
     }
 
+    public function test_terapis_belum_disetujui_tidak_dapat_meminta_penarikan(): void
+    {
+        [$therapist, $profile] = $this->therapist(['bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti']);
+        $profile->update(['verification_status' => 'anggota']);
+        Earning::create(['therapist_profile_id' => $profile->id, 'order_id' => $this->orderId($profile), 'amount' => 50000, 'available_at' => now()]);
+
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000])->assertForbidden();
+
+        $this->assertDatabaseCount('withdrawals', 0);
+    }
+
     public function test_request_snapshots_bank_and_reserves_funds_immediately(): void
     {
         [$therapist, $profile] = $this->therapist(['bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti']);
@@ -41,7 +52,7 @@ class WithdrawalTest extends TestCase
     private function therapist(array $attributes = []): array
     {
         $user = User::factory()->create(['role' => 'therapist']);
-        $profile = TherapistProfile::create([...$attributes, 'user_id' => $user->id, 'verification_status' => 'anggota', 'city' => 'Yogyakarta']);
+        $profile = TherapistProfile::create([...$attributes, 'user_id' => $user->id, 'verification_status' => 'identitas', 'city' => 'Yogyakarta']);
 
         return [$user, $profile];
     }

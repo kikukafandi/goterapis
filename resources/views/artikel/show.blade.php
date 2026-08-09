@@ -1,8 +1,12 @@
 @extends('layouts.app')
 @section('title', $article->meta_title ?? $article->title)
 @section('meta', $article->excerpt ?? 'Info Sehat GoTerapis')
+@section('canonical', route('artikel.show', $article))
+@section('image', $article->coverUrl() ? url($article->coverUrl()) : asset('images/brand/logo-mark.png'))
+@section('type', 'article')
 
 @push('head')
+    <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@type' => 'BlogPosting', 'headline' => $article->title, 'description' => $article->excerpt, 'url' => route('artikel.show', $article), 'image' => $article->coverUrl() ? url($article->coverUrl()) : asset('images/brand/logo-mark.png'), 'datePublished' => $article->published_at?->toAtomString(), 'dateModified' => $article->updated_at?->toAtomString(), 'author' => ['@type' => 'Person', 'name' => $article->author->name], 'publisher' => ['@type' => 'Organization', 'name' => 'GoTerapis', 'logo' => ['@type' => 'ImageObject', 'url' => asset('images/brand/logo-mark.png')]]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     <style>
         .jurnal-prose { font-family: var(--font-serif); color: var(--color-arang); }
         .jurnal-prose > p { margin: 0 0 1.5rem; font-size: 1.125rem; line-height: 1.85; }

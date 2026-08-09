@@ -1,188 +1,79 @@
 @php
-    $cats = [
-        ['slug' => 'pijat', 'label' => 'Pijat', 'desc' => 'Tradisional, relaksasi, kebugaran'],
-        ['slug' => 'bekam', 'label' => 'Bekam', 'desc' => 'Kering, basah, kebugaran'],
-        ['slug' => 'kretek', 'label' => 'Kretek', 'desc' => 'Kretek & peregangan tubuh'],
-        ['slug' => 'refleksi', 'label' => 'Refleksi', 'desc' => 'Refleksi kaki & tangan'],
-        ['slug' => 'lainnya', 'label' => 'Kerik & Totok', 'desc' => 'Perawatan tradisional lain'],
+    $therapistShell = auth()->user()?->isTherapist() && request()->routeIs('mitra.*', 'chat', 'notifications.*');
+    $navigationCities = $therapistShell ? [] : cache()->remember('navigation-cities', 3600, fn () => \App\Models\TherapistProfile::query()->whereNotNull('city')->where('city', '!=', '')->distinct()->orderBy('city')->pluck('city')->filter(fn ($city) => is_string($city) && $city !== '')->values()->all());
+    $selectedCity = is_string(request('kota')) ? request('kota') : '';
+    $therapistNavigation = [
+        ['label' => 'Beranda', 'route' => 'mitra.dashboard'],
+        ['label' => 'Pesanan', 'route' => 'mitra.pesanan'],
+        ['label' => 'Pesan', 'route' => 'chat'],
+        ['label' => 'Saldo', 'route' => 'mitra.saldo'],
+        ['label' => 'Profil', 'route' => 'mitra.profil.edit'],
     ];
 @endphp
+<header x-data="{ mobile: false }" @keydown.escape.window="mobile = false" class="sticky top-0 z-50 border-b border-garis bg-white/95 backdrop-blur-xl">
+    <div class="mx-auto flex h-[72px] max-w-6xl items-center gap-7 px-4">
+        <a href="{{ $therapistShell ? route('mitra.dashboard') : route('home') }}" class="shrink-0" aria-label="GoTerapis"><x-logo variant="full" class="h-10" /></a>
 
-<header
-    x-data="{ scrolled: false, mobile: false, cari: false, showSearch: false }"
-    @scroll.window="scrolled = window.scrollY > 8; showSearch = window.scrollY > 520"
-    @keydown.escape.window="mobile = false; cari = false"
-    :class="scrolled && 'shadow-[0_1px_0_rgba(30,36,31,.06)]'"
-    class="sticky top-0 z-50 border-b border-garis bg-white"
->
-    <div class="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 lg:gap-6">
-        {{-- Logo --}}
-        <a href="/" class="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold text-arang">
-            <x-logo class="h-9" /> GoTerapis
-        </a>
+        @if ($therapistShell)
+            <span class="hidden rounded-full bg-daun-muda px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-daun-tua sm:block">Mitra</span>
+            <nav class="ml-auto hidden items-center gap-1 lg:flex">
+                @foreach ($therapistNavigation as $item)
+                    <a href="{{ route($item['route']) }}" @class(['rounded-xl px-4 py-2.5 text-[13px] font-semibold', 'bg-daun-muda text-daun-tua' => request()->routeIs($item['route'], $item['route'].'.*'), 'text-arang hover:bg-kertas-app' => ! request()->routeIs($item['route'], $item['route'].'.*')])>{{ $item['label'] }}</a>
+                @endforeach
+            </nav>
+        @else
+            <form action="{{ route('cari') }}" method="get" class="hidden min-w-[200px] max-w-[340px] flex-1 items-center rounded-[14px] border border-garis bg-kertas-app py-1 pl-3.5 pr-1 lg:flex">
+                <x-icon name="search" class="h-[17px] w-[17px] shrink-0 text-kabut-samar" />
+                <input name="q" value="{{ request('q') }}" placeholder="Layanan atau nama terapis" class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[13px] font-medium text-arang outline-none placeholder:text-kabut-samar">
+                <label class="flex shrink-0 items-center gap-1.5 rounded-[10px] bg-white px-3 py-2.5">
+                    <select name="kota" onchange="this.form.submit()" aria-label="Pilih kota" class="max-w-28 appearance-none bg-transparent text-xs font-semibold text-arang outline-none"><option value="">Semua kota</option>@foreach ($navigationCities as $city)<option value="{{ $city }}" @selected($selectedCity === $city)>{{ $city }}</option>@endforeach</select>
+                </label>
+            </form>
+            <nav class="hidden shrink-0 items-center gap-5 lg:flex">
+                <a href="{{ route('cari') }}" class="text-[13px] font-semibold {{ request()->routeIs('cari', 'terapis.show') ? 'text-daun' : 'text-arang' }}">Cari terapis</a>
+                <a href="{{ route('artikel.index') }}" class="text-[13px] font-semibold {{ request()->routeIs('artikel.*') ? 'text-daun' : 'text-arang' }}">Jurnal</a>
+                <a href="{{ route('products.index') }}" class="text-[13px] font-semibold {{ request()->routeIs('products.*') ? 'text-daun' : 'text-arang' }}">Toko</a>
+                <a href="{{ route('register.therapist') }}" class="text-[13px] font-semibold {{ request()->routeIs('register.therapist') ? 'text-daun' : 'text-arang' }}">Jadi terapis</a>
+            </nav>
+        @endif
 
-        {{-- Nav desktop (gaya Upwork: menu + mega-menu) --}}
-        <nav class="hidden items-center gap-1 lg:flex">
-            <div class="relative" @mouseenter="cari = true" @mouseleave="cari = false">
-                <button type="button" @click="cari = !cari"
-                        class="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas"
-                        :class="cari && 'bg-kertas'">
-                    Cari terapis
-                    <x-icon name="chevron-down" class="h-4 w-4 transition-transform" ::class="cari && 'rotate-180'" />
-                </button>
-
-                {{-- Mega-menu kategori --}}
-                <div x-show="cari" x-cloak x-transition
-                     class="absolute left-0 top-full w-[540px] pt-2">
-                    <div class="rounded-2xl border border-garis bg-white p-3 shadow-lg">
-                        <div class="grid grid-cols-2 gap-1">
-                            @foreach ($cats as $c)
-                                <a href="/cari?kategori={{ $c['slug'] }}"
-                                   class="flex items-start gap-3 rounded-xl p-3 hover:bg-daun-muda">
-                                    <span class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-daun-muda text-daun">
-                                        <x-cat-icon :slug="$c['slug']" class="h-5 w-5" />
-                                    </span>
-                                    <span>
-                                        <span class="block text-sm font-semibold text-arang">{{ $c['label'] }}</span>
-                                        <span class="block text-xs text-kabut">{{ $c['desc'] }}</span>
-                                    </span>
-                                </a>
-                            @endforeach
-                            <a href="/cari" class="flex items-center justify-center gap-1.5 rounded-xl bg-daun p-3 text-sm font-semibold text-white hover:bg-daun-tua">
-                                Semua terapis <x-icon name="arrow-right" class="h-4 w-4" />
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <a href="{{ route('artikel.index') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Info Sehat</a>
-            <a href="{{ route('products.index') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Toko</a>
-            <a href="/#cara-kerja" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Cara Kerja</a>
-            <a href="/daftar-terapis" class="rounded-lg px-3 py-2 text-sm font-semibold text-arang hover:bg-kertas">Jadi Terapis</a>
-        </nav>
-
-        {{-- Search: muncul di navbar setelah hero tergulir --}}
-        <form action="/cari" method="get" x-show="showSearch" x-cloak x-transition
-              class="ml-auto hidden max-w-xs flex-1 items-center rounded-full border border-garis bg-kertas px-3 py-2 focus-within:border-daun lg:flex">
-            <x-icon name="search" class="h-4 w-4 shrink-0 text-kabut" />
-            <input name="q" type="text" placeholder="Cari layanan atau terapis…"
-                   class="w-full bg-transparent px-2 text-sm outline-none placeholder:text-kabut">
-        </form>
-
-        {{-- Auth desktop --}}
-        <div class="hidden shrink-0 items-center gap-1.5 lg:ml-auto lg:flex">
+        <div class="ml-auto hidden shrink-0 items-center gap-3 lg:flex">
             @auth
-                @if (auth()->user()->role === 'admin')
-                    <a href="{{ route('admin.dashboard') }}" class="rounded-full px-4 py-2 text-sm font-semibold text-arang hover:bg-kertas">Panel Admin</a>
-                @elseif (auth()->user()->role === 'therapist')
-                    <a href="{{ route('mitra.pesanan') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->is('mitra*') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Pesanan masuk</a>
-                @else
-                    <a href="{{ route('pesanan.index') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->is('pesanan*') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Pesanan</a>
-                @endif
-                @if (auth()->user()->role !== 'admin')
-                    <a href="{{ route('chat') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('chat') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">Percakapan</a>
-                @endif
-                <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 place-items-center rounded-full {{ request()->routeIs('notifications.*') ? 'bg-daun-muda text-daun' : 'text-arang hover:bg-kertas' }}">
-                    <x-icon name="bell" class="h-5 w-5" />
-                    @if ($unread = auth()->user()->unreadNotifications()->count())
-                        <span class="absolute -right-0.5 -top-0.5 min-w-5 rounded-full bg-kunyit px-1 text-center text-[10px] font-bold leading-5 text-arang">{{ $unread > 99 ? '99+' : $unread }}</span>
-                    @endif
-                </a>
-                <a href="{{ route('akun') }}" class="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold {{ request()->is('akun') ? 'text-daun' : 'text-arang' }} hover:bg-kertas">
-                    <x-icon name="user" class="h-4 w-4" /> {{ auth()->user()->name }}
-                </a>
-                <form method="post" action="{{ route('logout') }}">
-                    @csrf
-                    <button class="rounded-full bg-daun px-4 py-2 text-sm font-semibold text-white hover:bg-daun-tua">Keluar</button>
-                </form>
+                @unless ($therapistShell)
+                    @if (auth()->user()->role === 'admin')<a href="{{ route('admin.dashboard') }}" class="text-[13px] font-semibold text-arang">Panel admin</a>@elseif (auth()->user()->role === 'therapist')<a href="{{ route('mitra.dashboard') }}" class="text-[13px] font-semibold text-arang">Panel mitra</a>@else<a href="{{ route('pesanan.index') }}" class="text-[13px] font-semibold text-arang">Pesanan saya</a>@endif
+                    @if (auth()->user()->role !== 'admin')<a href="{{ route('chat') }}" class="text-[13px] font-semibold text-arang">Pesan</a>@endif
+                @endunless
+                <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-[38px] w-[38px] place-items-center rounded-full bg-kertas-app text-arang"><x-icon name="bell" class="h-[18px] w-[18px]" />@if ($unread = auth()->user()->unreadNotifications()->count())<span class="absolute right-0 top-0 min-w-4 rounded-full bg-jahe-terang px-1 text-center text-[9px] font-bold leading-4 text-white">{{ $unread > 9 ? '9+' : $unread }}</span>@endif</a>
+                <a href="{{ $therapistShell ? route('mitra.profil.edit') : route('akun') }}" class="flex items-center gap-2 rounded-full border border-garis px-1.5 py-1.5 pr-3 text-xs font-semibold text-arang">@if (auth()->user()->avatarUrl())<img src="{{ auth()->user()->avatarUrl() }}" alt="" class="h-[30px] w-[30px] rounded-full object-cover">@else<span class="grid h-[30px] w-[30px] place-items-center rounded-full bg-daun-muda font-bold text-daun">{{ mb_substr(auth()->user()->name, 0, 1) }}</span>@endif<span class="max-w-24 truncate">{{ auth()->user()->name }}</span></a>
+                @if ($therapistShell)<form method="post" action="{{ route('logout') }}">@csrf<button class="rounded-xl px-3 py-2.5 text-xs font-semibold text-jahe hover:bg-jahe-muda">Keluar</button></form>@endif
             @else
-                <a href="/masuk" class="rounded-full px-4 py-2 text-sm font-semibold text-arang hover:bg-kertas">Masuk</a>
-                <a href="/daftar" class="rounded-full bg-daun px-4 py-2 text-sm font-semibold text-white hover:bg-daun-tua">Daftar</a>
+                <a href="{{ route('login') }}" class="text-[13px] font-semibold text-arang">Masuk</a><a href="{{ route('register') }}" class="rounded-xl bg-daun px-4 py-3 text-[13px] font-bold text-white">Daftar</a>
             @endauth
         </div>
 
-        {{-- Aksi mobile --}}
         <div class="ml-auto flex items-center gap-1 lg:hidden">
-            <a href="/cari" aria-label="Cari" class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
-                <x-icon name="search" class="h-5 w-5" />
-            </a>
-            @auth
-                <a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="relative grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
-                    <x-icon name="bell" class="h-5 w-5" />
-                    @if ($unread = auth()->user()->unreadNotifications()->count())
-                        <span class="absolute right-0 top-0 min-w-5 rounded-full bg-kunyit px-1 text-center text-[10px] font-bold leading-5 text-arang">{{ $unread > 99 ? '99+' : $unread }}</span>
-                    @endif
-                </a>
-            @endauth
-            <button type="button" @click="mobile = true" aria-label="Menu" aria-controls="menu-mobile" :aria-expanded="mobile"
-                    class="grid h-10 w-10 place-items-center rounded-full text-arang hover:bg-kertas">
-                <x-icon name="menu" class="h-6 w-6" />
-            </button>
+            @unless ($therapistShell)<a href="{{ route('cari') }}" aria-label="Cari" class="grid h-10 w-10 place-items-center rounded-full text-arang"><x-icon name="search" class="h-5 w-5" /></a>@endunless
+            @auth<a href="{{ route('notifications.index') }}" aria-label="Notifikasi" class="grid h-10 w-10 place-items-center rounded-full text-arang"><x-icon name="bell" class="h-5 w-5" /></a>@endauth
+            <button type="button" @click="mobile = true" aria-label="Menu" class="grid h-10 w-10 place-items-center rounded-full text-arang"><x-icon name="menu" class="h-6 w-6" /></button>
         </div>
     </div>
 
-    {{-- Drawer mobile --}}
-    <div x-cloak class="fixed inset-0 z-50 lg:hidden" :class="mobile ? 'pointer-events-auto' : 'pointer-events-none'">
-        <div x-show="mobile" class="absolute inset-0 z-0 bg-arang/40 backdrop-blur-sm"
-             @click="mobile = false"
-             x-transition:enter="transition-opacity ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-             x-transition:leave="transition-opacity ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"></div>
-        <div x-show="mobile" id="menu-mobile" role="dialog" aria-modal="true" aria-label="Menu navigasi"
-             class="absolute right-0 top-0 z-10 flex h-full w-[82%] max-w-sm flex-col rounded-l-card bg-white shadow-[-12px_0_36px_rgba(30,36,31,.14)] transform-gpu will-change-transform"
-             x-transition:enter="transition-transform ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition-transform ease-in duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
-             @click="if ($event.target.closest('a')) mobile = false"
-             x-trap.noscroll="mobile">
-            <div class="flex items-center justify-between border-b border-garis px-4 pb-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-                <span class="font-display text-lg font-semibold text-daun">Menu</span>
-                <button type="button" @click="mobile = false" aria-label="Tutup" class="grid h-11 w-11 place-items-center rounded-full hover:bg-kertas">
-                    <x-icon name="close" class="h-5 w-5" />
-                </button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-4">
-                <p class="px-1 text-xs font-bold uppercase tracking-wide text-kabut">Kategori</p>
-                <div class="mt-2 space-y-1">
-                    @foreach ($cats as $c)
-                        <a href="/cari?kategori={{ $c['slug'] }}" class="flex items-center gap-3 rounded-xl p-2.5 hover:bg-daun-muda">
-                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-daun-muda text-daun">
-                                <x-cat-icon :slug="$c['slug']" class="h-5 w-5" />
-                            </span>
-                            <span class="text-sm font-semibold text-arang">{{ $c['label'] }}</span>
-                        </a>
-                    @endforeach
-                </div>
-                <div class="mt-4 space-y-1 border-t border-garis pt-4">
-                    <a href="/cari" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Semua terapis</a>
-                    <a href="{{ route('artikel.index') }}" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Info Sehat</a>
-                    <a href="{{ route('products.index') }}" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Toko</a>
-                    <a href="/#cara-kerja" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Cara Kerja</a>
-                    <a href="/daftar-terapis" class="block rounded-xl p-2.5 text-sm font-semibold text-arang hover:bg-kertas">Jadi Terapis</a>
-                </div>
-            </div>
-            <div class="border-t border-garis px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-                @auth
-                    <p class="px-1 pb-2 text-sm text-kabut">Masuk sebagai <span class="font-semibold text-arang">{{ auth()->user()->name }}</span></p>
-                    @if (auth()->user()->role === 'admin')
-                        <a href="{{ route('admin.dashboard') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Panel Admin</a>
-                    @elseif (auth()->user()->role === 'therapist')
-                        <a href="{{ route('mitra.pesanan') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Pesanan masuk</a>
-                    @else
-                        <a href="{{ route('pesanan.index') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Pesanan saya</a>
-                    @endif
-                    @if (auth()->user()->role !== 'admin')
-                        <a href="{{ route('chat') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Percakapan</a>
-                    @endif
-                    <a href="{{ route('akun') }}" class="mb-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Akun</a>
-                    <form method="post" action="{{ route('logout') }}">
-                        @csrf
-                        <button class="block w-full rounded-full bg-daun px-4 py-3 text-center text-sm font-semibold text-white hover:bg-daun-tua">Keluar</button>
-                    </form>
-                @else
-                    <a href="/daftar" class="block rounded-full bg-daun px-4 py-3 text-center text-sm font-semibold text-white hover:bg-daun-tua">Daftar</a>
-                    <a href="/masuk" class="mt-2 block rounded-full border border-garis px-4 py-3 text-center text-sm font-semibold text-arang hover:bg-kertas">Masuk</a>
-                @endauth
-            </div>
+    <div x-cloak x-show="mobile" class="fixed inset-0 z-50 lg:hidden" x-transition:enter="transition-opacity duration-300 ease-out" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity duration-200 ease-in" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+        <button type="button" @click="mobile = false" aria-label="Tutup menu" class="absolute inset-0 bg-arang/40"></button>
+        <div class="absolute right-0 top-0 flex h-dvh w-[82%] max-w-sm flex-col bg-white p-5 shadow-2xl transition-transform duration-300 ease-out" :class="mobile ? 'translate-x-0' : 'translate-x-full'" x-trap.noscroll="mobile">
+            <div class="flex items-center justify-between"><x-logo variant="full" class="h-10" /><button type="button" @click="mobile = false" aria-label="Tutup"><x-icon name="close" class="h-6 w-6" /></button></div>
+            @if ($therapistShell)
+                <nav class="mt-6 border-t border-garis pt-4">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-kabut-muda">Menu lainnya</span>
+                    <a href="{{ route('mitra.verifikasi') }}" class="mt-2 flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-arang hover:bg-kertas-app">Status verifikasi <x-icon name="arrow-right" class="h-4 w-4 text-kabut-muda" /></a>
+                    <a href="{{ route('tutorial') }}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-arang hover:bg-kertas-app">Bantuan & tutorial <x-icon name="arrow-right" class="h-4 w-4 text-kabut-muda" /></a>
+                    <a href="{{ route('home') }}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-arang hover:bg-kertas-app">Mode pelanggan <x-icon name="arrow-right" class="h-4 w-4 text-kabut-muda" /></a>
+                </nav>
+            @else
+                <form action="{{ route('cari') }}" class="mt-6 flex items-center gap-2 rounded-xl bg-kertas-app px-4 py-3"><x-icon name="search" class="h-5 w-5 text-kabut" /><input name="q" placeholder="Cari terapis" class="min-w-0 flex-1 bg-transparent text-sm outline-none"></form>
+                <nav class="mt-5 flex flex-col border-t border-garis pt-3"><a href="{{ route('cari') }}" class="py-3 text-sm font-semibold text-arang">Cari terapis</a><a href="{{ route('artikel.index') }}" class="py-3 text-sm font-semibold text-arang">Jurnal</a><a href="{{ route('products.index') }}" class="py-3 text-sm font-semibold text-arang">Toko</a><a href="{{ route('home') }}#cara-kerja" class="py-3 text-sm font-semibold text-arang">Cara kerja</a><a href="{{ route('register.therapist') }}" class="py-3 text-sm font-semibold text-arang">Jadi terapis</a></nav>
+            @endif
+            <div class="mt-auto border-t border-garis pt-5">@auth @unless ($therapistShell)<a href="{{ route('akun') }}" class="block rounded-xl border border-garis px-4 py-3 text-center text-sm font-bold text-arang">Profil</a>@endunless<form method="post" action="{{ route('logout') }}" class="{{ $therapistShell ? '' : 'mt-2' }}">@csrf<button class="w-full rounded-xl bg-daun px-4 py-3 text-sm font-bold text-white">Keluar</button></form>@else<a href="{{ route('register') }}" class="block rounded-xl bg-daun px-4 py-3 text-center text-sm font-bold text-white">Daftar</a><a href="{{ route('login') }}" class="mt-2 block rounded-xl border border-garis px-4 py-3 text-center text-sm font-bold text-arang">Masuk</a>@endauth</div>
         </div>
     </div>
 </header>

@@ -20,24 +20,23 @@ class OrderController extends Controller
     /** Form pemesanan untuk satu terapis. */
     public function create(Request $request, TherapistProfile $therapist)
     {
-        abort_if(! $therapist->is_available, 404);
-        if ($request->user()->role !== 'user') {
-            return redirect()->route('home')->with('error', 'Masuk sebagai pengguna untuk memesan terapis.');
-        }
+        abort_if(! $therapist->is_available || ! $therapist->isEligible(), 404);
+        abort_if($request->user()->role === 'admin', 403);
+        abort_if($therapist->user_id === $request->user()->id, 403);
 
-        $therapist->load(['user', 'services']);
+        $therapist->load(['user', 'services' => fn ($query) => $query->availableTo($therapist->gender)]);
 
         return view('pesanan.create', compact('therapist'));
     }
 
     public function availability(Request $request, TherapistProfile $therapist)
     {
-        abort_if(! $therapist->is_available, 404);
+        abort_if(! $therapist->is_available || ! $therapist->isEligible(), 404);
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
             'service_id' => ['required', 'integer'],
         ]);
-        $service = $therapist->services()->where('services.id', $data['service_id'])->first();
+        $service = $therapist->services()->availableTo($therapist->gender)->where('services.id', $data['service_id'])->first();
         if ($service === null) {
             throw ValidationException::withMessages(['service_id' => 'Layanan tidak tersedia untuk terapis ini.']);
         }
@@ -76,9 +75,7 @@ class OrderController extends Controller
     /** Simpan pesanan baru (status awal: menunggu konfirmasi terapis). */
     public function store(Request $request)
     {
-        if ($request->user()->role !== 'user') {
-            return redirect()->route('home')->with('error', 'Masuk sebagai pengguna untuk memesan terapis.');
-        }
+        abort_if($request->user()->role === 'admin', 403);
 
         $data = $request->validate([
             'therapist_profile_id' => ['required', 'exists:therapist_profiles,id'],
@@ -93,11 +90,13 @@ class OrderController extends Controller
         ]);
 
         $order = DB::transaction(function () use ($data, $request) {
-            $therapist = TherapistProfile::where('is_available', true)
+            $therapist = TherapistProfile::eligible()
+                ->where('is_available', true)
                 ->lockForUpdate()
                 ->findOrFail($data['therapist_profile_id']);
+            abort_if($therapist->user_id === $request->user()->id, 403);
 
-            $service = $therapist->services()->where('services.id', $data['service_id'])->first();
+            $service = $therapist->services()->availableTo($therapist->gender)->where('services.id', $data['service_id'])->first();
             if ($service === null) {
                 throw ValidationException::withMessages(['service_id' => 'Layanan tidak tersedia untuk terapis ini.']);
             }
@@ -217,10 +216,12 @@ class OrderController extends Controller
                     $gateway->refund($order, $refund['refund']);
                 }
 
-                $order->changeStatus('cancelled', 'Pelanggan membatalkan pesanan.', [
+                if (! $order->changeStatus('cancelled', 'Pelanggan membatalkan pesanan.', [
                     'cancelled_at' => now(),
                     'cancel_reason' => $data['cancel_reason'] ?? null,
-                ]);
+                ], [$order->status])) {
+                    return null;
+                }
 
                 return compact('paid', 'refund');
             });
@@ -248,11 +249,9 @@ class OrderController extends Controller
         if ($order->user_id !== $request->user()->id) {
             return redirect()->route('pesanan.index')->with('error', 'Pesanan tidak ditemukan.');
         }
-        if ($order->status !== 'in_progress') {
+        if (! $order->changeStatus('completed', 'Layanan telah selesai.', ['completed_at' => now()], ['in_progress'])) {
             return back()->with('error', 'Pesanan belum bisa diselesaikan.');
         }
-
-        $order->changeStatus('completed', 'Layanan telah selesai.', ['completed_at' => now()]);
 
         return back()->with('success', 'Terima kasih! Layanan ditandai selesai.');
     }

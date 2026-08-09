@@ -1,25 +1,5 @@
 @props(['order', 'messages'])
 
-@php
-    $statusLabels = [
-        'pending_confirmation' => 'Menunggu konfirmasi terapis',
-        'pending_payment' => 'Menunggu pembayaran',
-        'paid' => 'Sudah dibayar',
-        'therapist_en_route' => 'Terapis menuju lokasi',
-        'therapist_arrived' => 'Terapis sudah tiba',
-        'accepted' => 'Diterima terapis',
-        'in_progress' => 'Layanan berlangsung',
-        'completed' => 'Selesai',
-        'rejected' => 'Ditolak',
-        'cancelled' => 'Dibatalkan',
-        'refunded' => 'Dana dikembalikan',
-        'disputed' => 'Dalam sengketa',
-    ];
-    $detailRoute = auth()->user()->role === 'therapist'
-        ? route('mitra.pesanan.show', $order)
-        : route('pesanan.show', $order);
-@endphp
-
 <section aria-labelledby="judul-chat" class="rounded-card border border-garis bg-white p-5 sm:p-6"
          x-data="{
             messages: @js($messages->map(fn ($message) => [
@@ -56,21 +36,10 @@
                 finally { this.sending = false; this.$nextTick(() => this.$refs.input.focus()) }
             }
          }">
-    <div class="flex items-center gap-3 border-b border-garis pb-4">
-        <span class="grid h-10 w-10 place-items-center rounded-full bg-daun-muda text-daun-tua"><x-icon name="chat" class="h-5 w-5" /></span>
-        <div><h2 id="judul-chat" class="font-display text-lg font-bold text-arang">Percakapan pesanan</h2><p class="text-xs text-kabut">Koordinasikan jadwal dan layanan di sini.</p></div>
-    </div>
-
-    <div class="mt-4 rounded-xl border border-garis bg-kertas p-4 text-sm">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <p class="font-semibold text-arang">{{ $order->code }}</p>
-                <p class="mt-1 text-kabut">{{ $order->service->name }} · {{ $order->duration_min }} menit</p>
-                <p class="text-kabut">{{ $order->scheduled_at->translatedFormat('l, d F Y · H:i') }}</p>
-            </div>
-            <span class="rounded-full bg-daun-muda px-3 py-1 text-xs font-semibold text-daun-tua">{{ $statusLabels[$order->status] ?? $order->status }}</span>
-        </div>
-        <a href="{{ $detailRoute }}" class="mt-3 inline-flex items-center gap-1 font-semibold text-daun hover:underline">Lihat detail pesanan <x-icon name="arrow-right" class="h-4 w-4" /></a>
+    <div class="flex flex-wrap items-center gap-3 border-b border-garis pb-4">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-daun-muda text-daun-tua"><x-icon name="chat" class="h-5 w-5" /></span>
+        <div class="min-w-0 flex-1"><h2 id="judul-chat" class="font-display text-lg font-bold text-arang">Percakapan pesanan</h2><p class="text-xs text-kabut">Koordinasikan jadwal dan layanan di sini.</p></div>
+        <div class="w-full pl-13 sm:w-auto sm:pl-0"><x-order-report :$order source="chat" /></div>
     </div>
 
     <div x-ref="list" role="log" aria-live="polite" class="mt-4 h-80 space-y-3 overflow-y-auto rounded-xl bg-kertas p-3">

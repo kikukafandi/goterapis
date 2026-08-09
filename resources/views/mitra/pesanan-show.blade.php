@@ -21,36 +21,30 @@
 @endphp
 
 @section('content')
-{{-- Header solid — pembeda visual sisi mitra --}}
-<div class="bg-daun px-4 pb-7 pt-5">
-    <div class="mx-auto flex max-w-3xl flex-col gap-4">
+<div class="relative overflow-hidden bg-daun-terang px-5 pb-6 pt-4 sm:px-8 sm:pb-7 sm:pt-5">
+    <span class="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/10 lg:-right-20 lg:-top-44 lg:h-96 lg:w-96"></span>
+    <div class="mx-auto flex max-w-6xl flex-col gap-4">
         <div class="flex items-center gap-3.5">
             <a href="{{ route('mitra.pesanan') }}" aria-label="Kembali ke daftar pesanan"
-               class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 text-white hover:bg-white/25">←</a>
+               class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 text-white hover:bg-white/25"><x-icon name="arrow-left" class="h-4 w-4" /></a>
             <span class="flex min-w-0 flex-col gap-1">
-                <span class="text-[11px] font-medium text-white/70">Nomor pesanan</span>
-                <span class="font-display truncate text-base font-extrabold text-white">{{ $order->code }}</span>
-            </span>
-            <span class="ml-auto shrink-0 rounded-full bg-white/15 px-3 py-2 text-[10px] font-bold text-white">
-                {{ $statusLabels[$order->status] ?? $order->status }}
+                <span class="font-mono truncate text-[11px] font-semibold text-white/75">{{ $order->code }}</span>
+                <span class="font-display truncate text-lg font-extrabold text-white">{{ $statusLabels[$order->status] ?? $order->status }}</span>
             </span>
         </div>
 
         <div class="flex items-end justify-between gap-4">
             <span class="flex flex-col gap-1">
-                <span class="text-[11px] font-medium text-white/70">Nilai pesanan</span>
-                <span class="font-display text-[32px] font-extrabold leading-none text-white">Rp{{ number_format($order->price + $order->transport_fee, 0, ',', '.') }}</span>
+                <span class="text-[11px] font-medium text-white/75">Bayaran bersihmu</span>
+                <span class="font-display text-[30px] font-extrabold leading-none text-white sm:text-[34px]">Rp{{ number_format($order->payout, 0, ',', '.') }}</span>
             </span>
-            <span class="pb-1 text-right text-[11px] font-medium leading-snug text-white/70">
-                Layanan Rp{{ number_format($order->price, 0, ',', '.') }}@if ($order->transport_fee > 0)<br>Transport Rp{{ number_format($order->transport_fee, 0, ',', '.') }}@endif
-            </span>
+            <span class="pb-1 text-right text-[11px] font-medium leading-snug text-white/75">Masuk saldo 1 hari<br>setelah sesi selesai</span>
         </div>
     </div>
 </div>
 
-<div class="mx-auto flex max-w-3xl flex-col gap-3.5 px-4 pb-28 pt-4">
-
-    {{-- Data pasien --}}
+<div class="mx-auto grid max-w-6xl gap-3.5 px-5 pb-28 pt-4 sm:px-8 sm:pt-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,.85fr)] lg:items-start lg:pb-16 xl:gap-5">
+    <div class="flex min-w-0 flex-col gap-3.5">
     <div class="kartu flex flex-col gap-3.5 p-[18px]">
         <div class="flex items-center gap-3">
             @if ($order->user->avatarUrl())
@@ -71,7 +65,6 @@
         </div>
     </div>
 
-    {{-- Jadwal, alamat, catatan --}}
     <div class="kartu flex flex-col gap-2.5 p-[18px]">
         <span class="text-sm font-bold text-arang">Detail sesi</span>
         <div class="flex justify-between gap-3.5">
@@ -87,7 +80,7 @@
                 <span class="shrink-0 text-[13px] font-medium text-kabut-muda">Alamat</span>
                 <span class="text-right text-[13px] font-semibold leading-snug text-arang">{{ $order->address }}</span>
             </div>
-            <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($order->address) }}" target="_blank" rel="noopener"
+            <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($order->lat !== null && $order->lng !== null ? $order->lat.','.$order->lng : $order->address) }}" target="_blank" rel="noopener"
                class="btn-garis mt-1 w-full py-3.5 text-[13px]">Buka di peta</a>
         @endif
         @if ($order->notes)
@@ -98,8 +91,41 @@
         @endif
     </div>
 
-    {{-- Aksi berurutan: satu tombol utama besar per tahap --}}
-    @if ($order->status === 'paid' && $isPanggilan)
+    <div class="kartu flex flex-col gap-3 p-[18px]">
+        <span class="text-sm font-bold text-arang">Rincian bayaran</span>
+        <div class="flex justify-between gap-4 text-[13px]">
+            <span class="font-medium text-kabut-muda">Harga layanan</span>
+            <span class="font-semibold text-arang">Rp{{ number_format($order->price, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between gap-4 text-[13px]">
+            <span class="font-medium text-kabut-muda">Biaya transport</span>
+            <span class="font-semibold text-arang">Rp{{ number_format($order->transport_fee, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between gap-4 text-[13px]">
+            <span class="font-medium text-kabut-muda">Komisi platform</span>
+            <span class="font-semibold text-jahe">−Rp{{ number_format($order->commission, 0, ',', '.') }}</span>
+        </div>
+        <div class="flex justify-between gap-4 border-t border-garis-muda pt-3">
+            <span class="text-sm font-extrabold text-arang">Kamu terima</span>
+            <span class="font-display text-base font-extrabold text-daun">Rp{{ number_format($order->payout, 0, ',', '.') }}</span>
+        </div>
+    </div>
+    </div>
+
+    <div class="flex min-w-0 flex-col gap-3.5 lg:sticky lg:top-24">
+    @if ($order->status === 'pending_confirmation')
+        <div class="kartu flex gap-2.5 p-3">
+            <form method="post" action="{{ route('mitra.pesanan.reject', $order) }}" class="shrink-0">
+                @csrf @method('patch')
+                <input type="hidden" name="cancel_reason" value="Tidak dapat menerima pesanan">
+                <button class="btn-garis px-5 text-sm">Tolak</button>
+            </form>
+            <form method="post" action="{{ route('mitra.pesanan.accept', $order) }}" class="flex-1">
+                @csrf @method('patch')
+                <button class="btn-utama w-full text-[15px]">Terima</button>
+            </form>
+        </div>
+    @elseif ($order->status === 'paid' && $isPanggilan)
         <form method="post" action="{{ route('mitra.pesanan.en-route', $order) }}">
             @csrf @method('patch')
             <button class="btn-utama w-full text-[15px]">Berangkat (OTW)</button>
@@ -193,6 +219,7 @@
 
     <div id="chat-pesanan" class="scroll-mt-24">
         <x-order-chat :$order :$messages />
+    </div>
     </div>
 </div>
 @endsection

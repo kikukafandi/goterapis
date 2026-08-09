@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\PaymentGateway;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -16,23 +17,29 @@ class PaymentController extends Controller
         if ($order->user_id !== $request->user()->id) {
             return redirect()->route('pesanan.index')->with('error', 'Pesanan tidak ditemukan.');
         }
-        if ($order->status !== 'pending_payment') {
-            return back()->with('error', 'Pesanan ini tidak menunggu pembayaran.');
-        }
-        // Jaga-jaga bila scheduler belum sempat membatalkan (jendelanya sampai satu menit).
-        if ($order->paymentExpired()) {
-            return back()->with('error', 'Batas waktu pembayaran sudah lewat. Silakan pesan lagi.');
-        }
+        $result = DB::transaction(function () use ($order) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if ($order->status !== 'pending_payment') {
+                return ['error' => 'Pesanan ini tidak menunggu pembayaran.'];
+            }
+            if ($order->paymentExpired()) {
+                return ['error' => 'Batas waktu pembayaran sudah lewat. Silakan pesan lagi.'];
+            }
 
-        $redirect = $this->gateway->pay($order);
+            $redirect = $this->gateway->pay($order);
+            if ($redirect === null && ! $order->changeStatus('paid', 'Pembayaran pesanan berhasil.', from: ['pending_payment'])) {
+                return ['error' => 'Status pesanan sudah berubah. Muat ulang halaman.'];
+            }
 
-        // Midtrans → arahkan ke halaman pembayaran; lunas dikonfirmasi via webhook.
-        if ($redirect !== null) {
-            return redirect()->away($redirect);
+            return ['redirect' => $redirect];
+        });
+
+        if (isset($result['error'])) {
+            return back()->with('error', $result['error']);
         }
-
-        // Simulasi → lunas seketika.
-        $order->changeStatus('paid', 'Pembayaran pesanan berhasil.');
+        if ($result['redirect'] !== null) {
+            return redirect()->away($result['redirect']);
+        }
 
         return redirect()->route('pesanan.show', $order)->with('success', 'Pembayaran berhasil. Menunggu terapis menerima pesanan.');
     }

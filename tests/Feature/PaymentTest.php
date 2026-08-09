@@ -103,6 +103,13 @@ class PaymentTest extends TestCase
         $this->assertSame(0, Payment::count());
     }
 
+    public function test_scheduler_expiry_terdaftar_setiap_menit(): void
+    {
+        $this->artisan('schedule:list')
+            ->expectsOutputToContain('orders:expire-unpaid')
+            ->assertSuccessful();
+    }
+
     public function test_pesanan_batal_otomatis_bila_lewat_batas_bayar(): void
     {
         config(['goterapis.payment_window_hours' => 1]);

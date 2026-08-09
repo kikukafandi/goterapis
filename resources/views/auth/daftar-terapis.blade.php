@@ -60,13 +60,14 @@
 @endphp
 
 <div
-    class="mx-auto max-w-3xl px-4 pb-28 pt-6 sm:pt-8"
+    class="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:pt-10"
     x-data="{
         step: {{ $initialStep }},
         totalSteps: 6,
 
         call: {{ old('serves_call') ? 'true' : 'false' }},
         place: {{ old('serves_place') ? 'true' : 'false' }},
+        gender: @js(old('gender')),
 
         stepError: '',
 
@@ -207,22 +208,15 @@
 >
     <div x-ref="formTop"></div>
 
-    {{-- Header --}}
-    <div class="text-center">
-        <span class="chip">Gabung komunitas</span>
-
-        <h1 class="mt-3 font-display text-2xl font-bold text-arang sm:text-3xl">
-            Daftar jadi terapis
-        </h1>
-
-        <p class="mx-auto mt-2 max-w-lg text-sm leading-6 text-kabut">
-            Lengkapi profil dan layananmu dalam enam tahap. Setelah mendaftar, status awalmu
-            <strong class="font-semibold text-arang">Anggota Komunitas</strong>.
-        </p>
+    <div class="max-w-2xl">
+        <p class="text-xs font-bold uppercase tracking-[.18em] text-daun">Mitra GoTerapis</p>
+        <h1 class="mt-3 font-display text-3xl font-bold tracking-tight text-arang sm:text-4xl">Gabung jadi terapis GoTerapis</h1>
+        <p class="mt-3 text-sm leading-7 text-kabut sm:text-base">Atur jadwal sendiri, tentukan harga layananmu, dan cairkan penghasilan kapan saja. Pendaftaran gratis, komisi hanya dipotong dari layanan yang selesai.</p>
     </div>
 
-    {{-- Progress --}}
-    <div class="mt-7 rounded-2xl border border-garis bg-white p-4 sm:p-5">
+    <div class="mt-8 grid items-start gap-7 lg:grid-cols-[18rem_1fr]">
+    <aside class="space-y-4 lg:sticky lg:top-24">
+    <div class="rounded-card border border-garis bg-white p-5">
         <div class="mb-4 flex items-center justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-kabut">
@@ -298,7 +292,6 @@
             </template>
         </div>
 
-        {{-- Tab mobile --}}
         <div class="mt-4 flex gap-1.5 sm:hidden">
             <template x-for="number in totalSteps" :key="number">
                 <button
@@ -311,7 +304,13 @@
             </template>
         </div>
     </div>
+    <div class="rounded-card border border-daun/20 bg-daun-muda p-5">
+        <p class="text-sm font-bold text-daun-tua">Berapa yang kamu terima?</p>
+        <p class="mt-2 text-xs leading-6 text-daun-tua/80">Dari layanan Rp95.000, setelah komisi platform 15%, Rp80.750 masuk ke saldomu. Biaya transport diterima penuh.</p>
+    </div>
+    </aside>
 
+    <div class="min-w-0">
     {{-- Server errors --}}
     @if ($errors->any())
         <div class="mt-5 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm text-jahe">
@@ -438,6 +437,7 @@
 
                     <select
                         name="gender"
+                        x-model="gender"
                         required
                         class="w-full appearance-none rounded-xl border border-garis bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-daun"
                     >
@@ -693,6 +693,7 @@
                                     x-data="{
                                         selected: {{ $oldServices->contains($service->id) ? 'true' : 'false' }}
                                     }"
+                                    x-show="! @js($service->allowed_gender) || gender === @js($service->allowed_gender)"
                                     class="rounded-2xl border p-4 transition-colors"
                                     :class="selected
                                         ? 'border-daun bg-daun/5'
@@ -913,5 +914,7 @@
             </a>
         </p>
     </form>
+    </div>
+    </div>
 </div>
 @endsection

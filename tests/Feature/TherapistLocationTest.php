@@ -78,7 +78,7 @@ class TherapistLocationTest extends TestCase
     {
         $customer = User::factory()->create(['role' => 'user']);
         $therapist = User::factory()->create(['role' => 'therapist']);
-        $profile = TherapistProfile::create(['user_id' => $therapist->id, 'verification_status' => 'anggota', 'serves_call' => true, 'city' => 'Yogyakarta', 'is_available' => true]);
+        $profile = TherapistProfile::create(['user_id' => $therapist->id, 'verification_status' => 'identitas', 'serves_call' => true, 'city' => 'Yogyakarta', 'is_available' => true]);
         $service = Service::create(['name' => 'Pijat', 'slug' => fake()->unique()->slug(), 'category' => 'pijat']);
         $order = Order::create(['code' => fake()->unique()->bothify('GT-########'), 'user_id' => $customer->id, 'therapist_profile_id' => $profile->id, 'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => now()->addDay(), 'duration_min' => 60, 'address' => 'Malioboro', 'lat' => -7.7956, 'lng' => 110.3695, 'loc_accuracy' => 10, 'price' => 100000, 'transport_fee' => 0, 'service_fee' => 3000, 'total' => 103000, 'commission' => 15000, 'payout' => 85000, 'status' => 'therapist_en_route', 'start_pin' => '123456']);
 

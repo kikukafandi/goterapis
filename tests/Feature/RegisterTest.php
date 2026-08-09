@@ -91,7 +91,7 @@ class RegisterTest extends TestCase
             'legal_version' => 'PALSU',
         ]);
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('mitra.verifikasi'));
         $this->assertAuthenticated();
 
         $user = User::where('email', 'siti@example.com')->firstOrFail();
@@ -121,6 +121,34 @@ class RegisterTest extends TestCase
             Storage::disk('local')->assertExists($document->path);
             Storage::disk('public')->assertMissing($document->path);
         }
+    }
+
+    public function test_therapist_can_view_verification_status(): void
+    {
+        $therapist = User::factory()->create(['role' => 'therapist']);
+        $profile = $therapist->therapistProfile()->create([
+            'verification_status' => 'anggota',
+            'city' => 'Bandung',
+        ]);
+        $profile->documents()->create([
+            'type' => 'ktp',
+            'path' => 'therapist/ktp.jpg',
+            'status' => 'rejected',
+            'note' => 'Foto KTP kurang jelas.',
+        ]);
+
+        $this->actingAs($therapist)
+            ->get(route('mitra.verifikasi'))
+            ->assertOk()
+            ->assertSee('Ada dokumen yang perlu diperbaiki')
+            ->assertSee('Foto KTP kurang jelas.');
+    }
+
+    public function test_non_therapist_cannot_view_verification_status(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('mitra.verifikasi'))
+            ->assertRedirect(route('home'));
     }
 
     public function test_therapist_registration_requires_a_service_model(): void

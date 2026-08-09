@@ -21,4 +21,10 @@ return [
 
     // Radius maksimum (meter) posisi terapis dari titik pelanggan saat memulai layanan panggilan.
     'start_radius_m' => env('GOTERAPIS_START_RADIUS_M', 150),
+
+    // Tenggang penyelesaian otomatis setelah durasi layanan berakhir (jam).
+    'completion_grace_hours' => env('GOTERAPIS_COMPLETION_GRACE_HOURS', 2),
+
+    // Batas laporan setelah pesanan selesai (jam).
+    'report_window_hours' => env('GOTERAPIS_REPORT_WINDOW_HOURS', 24),
 ];

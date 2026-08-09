@@ -34,7 +34,7 @@ class MidtransWebhookController extends Controller
             || ($transaction === 'capture' && $fraud !== 'challenge');
         $failed = in_array($transaction, ['deny', 'expire', 'cancel'], true);
 
-        $latePayment = DB::transaction(function () use ($request, $orderId, $grossAmount, $paid, $failed) {
+        $latePayment = DB::transaction(function () use ($request, $orderId, $grossAmount, $transaction, $paid, $failed) {
             $order = Order::where('code', $orderId)->lockForUpdate()->first();
             if ($order === null) {
                 return 'not_found';
@@ -46,26 +46,35 @@ class MidtransWebhookController extends Controller
             $payment = $order->payment()->firstOrNew([]);
             $status = $payment->status;
             if (! in_array($status, ['paid', 'refunded'], true)) {
-                $status = $paid ? 'paid' : ($failed ? 'failed' : 'pending');
+                $status = $paid ? 'paid' : ($transaction === 'expire' ? 'expired' : ($failed ? 'failed' : 'pending'));
             }
             $payment->fill([
                 'gateway' => 'midtrans',
-                'gateway_ref' => $orderId,
+                'gateway_ref' => (string) ($request->input('transaction_id') ?: $orderId),
                 'method' => $request->input('payment_type'),
                 'amount' => $order->total,
                 'status' => $status,
                 'paid_at' => $status === 'paid' ? ($payment->paid_at ?? now()) : null,
-                'raw' => $request->all(),
+                'raw' => $request->only(['transaction_status', 'fraud_status', 'status_code', 'payment_type', 'transaction_time']),
             ])->save();
 
-            if ($paid && $order->status === 'pending_payment') {
-                $order->changeStatus('paid', 'Pembayaran pesanan berhasil.');
+            if ($paid) {
+                $order->changeStatus('paid', 'Pembayaran pesanan berhasil.', from: ['pending_payment']);
             }
 
-            return $paid && $order->status === 'cancelled'
+            if ($paid && $order->status === 'cancelled'
                 && $order->cancel_reason === 'Pembayaran tidak diselesaikan sampai batas waktu.'
-                    ? $order->id
-                    : null;
+                && $payment->status !== 'refunded'
+                && $payment->refund_requested_at === null) {
+                $payment->update([
+                    'refund_amount' => $order->total,
+                    'refund_requested_at' => $payment->refund_requested_at ?? now(),
+                ]);
+
+                return $order->id;
+            }
+
+            return null;
         });
 
         if ($latePayment === 'not_found') {

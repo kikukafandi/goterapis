@@ -17,7 +17,7 @@
                 Terapis tepercaya datang ke rumahmu.
             </p>
             <p class="mt-3 max-w-sm text-[15px] leading-relaxed text-white/85">
-                Pijat, bekam, refleksi — sesuai jadwalmu. Bayar setelah pesanan diterima.
+                Pijat, bekam, terapi tubuh — sesuai jadwalmu. Bayar setelah pesanan diterima.
             </p>
         </div>
     </div>
@@ -29,7 +29,7 @@
             <a href="/" class="flex flex-col items-center gap-3.5">
                 <x-logo variant="full" class="h-24" />
                 <span class="text-center text-sm font-medium leading-relaxed text-kabut-muda text-pretty">
-                    Terapis tepercaya datang ke rumahmu.<br>Pijat, bekam, refleksi — sesuai jadwalmu.
+                    Terapis tepercaya datang ke rumahmu.<br>Pijat, bekam, terapi tubuh — sesuai jadwalmu.
                 </span>
             </a>
 

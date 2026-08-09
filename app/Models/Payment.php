@@ -12,7 +12,17 @@ class Payment extends Model
     protected $casts = [
         'raw' => 'array',
         'paid_at' => 'datetime',
+        'refund_requested_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'refund_failed_at' => 'datetime',
     ];
+
+    public function canRetryRefund(): bool
+    {
+        return $this->status === 'paid'
+            && $this->refund_amount > 0
+            && $this->refund_failed_at !== null;
+    }
 
     public function order(): BelongsTo
     {

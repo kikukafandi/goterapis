@@ -17,7 +17,12 @@ class ChatMessageController extends Controller
 
         $user = $request->user();
         $orders = Order::query()
-            ->when($user->isTherapist(), fn ($query) => $query->where('therapist_profile_id', $user->therapistProfile?->id ?? 0), fn ($query) => $query->where('user_id', $user->id))
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+                if ($user->therapistProfile !== null) {
+                    $query->orWhere('therapist_profile_id', $user->therapistProfile->id);
+                }
+            })
             ->with(['user', 'therapistProfile.user', 'service', 'latestMessage'])
             ->withCount(['messages as unread_messages_count' => fn ($query) => $query->whereNull('read_at')->where('sender_id', '!=', $user->id)])
             ->orderByRaw('COALESCE((select max(created_at) from chat_messages where chat_messages.order_id = orders.id), orders.created_at) DESC')

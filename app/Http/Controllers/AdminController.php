@@ -12,6 +12,7 @@ use App\Models\TherapistProfile;
 use App\Models\User;
 use App\Models\Withdrawal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -24,7 +25,7 @@ class AdminController extends Controller
             'orders' => Order::count(),
             'products' => Product::count(),
             'active_banners' => PromotionBanner::visible()->count(),
-            'open_reports' => Report::where('status', 'open')->count(),
+            'open_reports' => Report::whereIn('status', ['open', 'reviewing'])->count(),
             'pending_withdrawals' => Withdrawal::where('status', 'requested')->count(),
             'pending_withdrawal_total' => (int) Withdrawal::where('status', 'requested')->sum('amount'),
             'articles' => Article::count(),
@@ -68,7 +69,12 @@ class AdminController extends Controller
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $document->update($data);
+        DB::transaction(function () use ($document, $data): void {
+            $document->update($data);
+            if ($data['status'] === 'rejected' && in_array($document->type, TherapistDocument::REQUIRED_TYPES, true)) {
+                $document->therapistProfile()->update(['verification_status' => 'anggota', 'is_featured' => false, 'is_available' => false]);
+            }
+        });
 
         return back()->with('ok', 'Dokumen diperbarui.');
     }

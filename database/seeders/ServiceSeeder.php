@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Service;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ServiceSeeder extends Seeder
@@ -12,26 +13,33 @@ class ServiceSeeder extends Seeder
     {
         $catalog = [
             'pijat' => [
-                'Pijat Tradisional', 'Pijat Kebugaran', 'Pijat Olahraga',
+                'Pijat Tradisional' => null,
+                'Pijat Kebugaran' => null,
+                'Pijat Olahraga' => null,
+                'Spot Massage' => null,
+                'Spa Massage' => 'wanita',
             ],
-            'bekam' => ['Bekam'],
-            'kretek' => ['Kretek'],
-            'refleksi' => ['Pijat Refleksi Kaki', 'Pijat Refleksi Tangan'],
-            'lainnya' => ['Kerik', 'Totok', 'Perawatan Tubuh Tradisional'],
+            'bekam' => ['Bekam' => null],
+            'kretek' => ['Kretek' => null],
+            'lainnya' => ['Kerik' => null, 'Totok' => null, 'Perawatan Tubuh Tradisional' => null],
         ];
 
         $keep = [];
-        foreach ($catalog as $category => $names) {
-            foreach ($names as $name) {
+        foreach ($catalog as $category => $services) {
+            foreach ($services as $name => $allowedGender) {
                 $keep[] = Str::slug($name);
                 Service::updateOrCreate(
                     ['slug' => Str::slug($name)],
-                    ['name' => $name, 'category' => $category, 'is_active' => true],
+                    ['name' => $name, 'category' => $category, 'allowed_gender' => $allowedGender, 'is_active' => true],
                 );
             }
         }
 
-        // Nonaktifkan layanan lama yang tak lagi ada di katalog (tetap disimpan agar riwayat terapis utuh).
+        $obsoleteIds = Service::where('category', 'refleksi')
+            ->orWhereIn('slug', ['pijat-relaksasi', 'relaksasi', 'bekam-kering', 'totok-wajah'])
+            ->pluck('id');
+        Service::whereIn('id', $obsoleteIds)->update(['is_active' => false]);
+        DB::table('therapist_service')->whereIn('service_id', $obsoleteIds)->delete();
         Service::whereNotIn('slug', $keep)->update(['is_active' => false]);
     }
 }

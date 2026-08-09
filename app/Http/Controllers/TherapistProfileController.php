@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\TherapistDocument;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,13 +13,20 @@ use Illuminate\Validation\Rule;
 
 class TherapistProfileController extends Controller
 {
+    public function verification(Request $request): View
+    {
+        $profile = $request->user()->therapistProfile()->with('documents')->firstOrFail();
+
+        return view('mitra.verifikasi', compact('profile'));
+    }
+
     public function edit(Request $request): View
     {
         $profile = $request->user()->therapistProfile()->with(['services', 'schedules'])->firstOrFail();
 
         return view('mitra.profil-edit', [
             'profile' => $profile,
-            'services' => Service::where('is_active', true)->orderBy('category')->orderBy('name')->get(),
+            'services' => Service::availableTo($profile->gender)->orderBy('category')->orderBy('name')->get(),
         ]);
     }
 
@@ -37,6 +45,8 @@ class TherapistProfileController extends Controller
             'province' => ['required', 'string', 'max:100'],
             'city' => ['required', 'string', 'max:100'],
             'district' => ['nullable', 'string', 'max:100'],
+            'service_lat' => ['nullable', 'numeric', 'between:-90,90', 'required_with:service_lng'],
+            'service_lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:service_lat'],
             'serves_call' => ['nullable', 'boolean'],
             'serves_place' => ['nullable', 'boolean'],
             'transport_fee' => ['nullable', 'integer', 'min:0'],
@@ -63,6 +73,10 @@ class TherapistProfileController extends Controller
         if (! $request->boolean('serves_call') && ! $request->boolean('serves_place')) {
             return back()->withInput()->withErrors(['serves_call' => 'Pilih minimal satu model layanan.']);
         }
+        $eligibleServiceIds = Service::availableTo($data['gender'])->whereIn('id', $data['services'])->pluck('id');
+        if ($eligibleServiceIds->count() !== count(array_unique($data['services']))) {
+            return back()->withInput()->withErrors(['services' => 'Pilihan layanan tidak tersedia untuk profilmu.']);
+        }
         foreach ($data['schedules'] as $index => $schedule) {
             if (($schedule['active'] ?? false) && $schedule['end'] <= $schedule['start']) {
                 return back()->withInput()->withErrors(["schedules.{$index}.end" => 'Jam selesai harus setelah jam mulai.']);
@@ -86,6 +100,8 @@ class TherapistProfileController extends Controller
                 'province' => $data['province'],
                 'city' => $data['city'],
                 'district' => $data['district'] ?? null,
+                'service_lat' => $data['service_lat'] ?? null,
+                'service_lng' => $data['service_lng'] ?? null,
                 'serves_call' => $request->boolean('serves_call'),
                 'serves_place' => $request->boolean('serves_place'),
                 'transport_fee' => $request->boolean('serves_call') ? ($data['transport_fee'] ?? 0) : 0,
@@ -116,5 +132,31 @@ class TherapistProfileController extends Controller
         }
 
         return back()->with('success', 'Profil berhasil diperbarui.');
+    }
+
+    public function replaceDocument(Request $request, TherapistDocument $document): RedirectResponse
+    {
+        abort_unless($document->therapist_profile_id === $request->user()->therapistProfile()->value('id'), 403);
+        abort_unless($document->status === 'rejected', 422);
+
+        $data = $request->validate([
+            'document' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:4096'],
+        ]);
+        $oldPath = $document->path;
+        $newPath = $data['document']->store("therapist/{$request->user()->id}/dokumen");
+
+        try {
+            DB::transaction(function () use ($document, $newPath): void {
+                $document->update(['path' => $newPath, 'status' => 'pending', 'note' => null]);
+                $document->therapistProfile()->update(['verification_status' => 'anggota', 'is_featured' => false, 'is_available' => false]);
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($newPath);
+            throw $exception;
+        }
+
+        Storage::disk('local')->delete($oldPath);
+
+        return back()->with('success', 'Dokumen pengganti berhasil dikirim dan menunggu tinjauan.');
     }
 }

@@ -38,6 +38,8 @@ class TherapistProfile extends Model
         'facilities' => 'array',
         'place_lat' => 'float',
         'place_lng' => 'float',
+        'service_lat' => 'float',
+        'service_lng' => 'float',
         'rating_avg' => 'float',
     ];
 
@@ -53,6 +55,20 @@ class TherapistProfile extends Model
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->verification_status] ?? $this->verification_status;
+    }
+
+    public function isEligible(): bool
+    {
+        return $this->verification_status !== 'anggota'
+            && ! $this->documents()->whereIn('type', TherapistDocument::REQUIRED_TYPES)->where('status', '!=', 'approved')->exists();
+    }
+
+    public function scopeEligible($query)
+    {
+        return $query->where('verification_status', '!=', 'anggota')
+            ->whereDoesntHave('documents', fn ($query) => $query
+                ->whereIn('type', TherapistDocument::REQUIRED_TYPES)
+                ->where('status', '!=', 'approved'));
     }
 
     public function user(): BelongsTo
@@ -80,6 +96,11 @@ class TherapistProfile extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 
     public function earnings(): HasMany
