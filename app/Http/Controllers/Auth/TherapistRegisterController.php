@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use App\Support\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class TherapistRegisterController extends Controller
         ]);
     }
 
-    public function register(Request $request)
+    public function register(Request $request, Otp $otp)
     {
         $data = $request->validate([
             // Akun
@@ -132,7 +133,9 @@ class TherapistRegisterController extends Controller
         Auth::login($profile->user);
         $request->session()->regenerate();
 
-        return redirect()->route('mitra.verifikasi')
-            ->with('success', 'Pendaftaran terkirim! Tim kami akan memeriksa dokumenmu.');
+        $otp->sendQuietly($profile->user, 'daftar');
+
+        return redirect()->route('phone.verify')
+            ->with('success', 'Pendaftaran terkirim! Verifikasi nomor WhatsApp-mu dulu, ya.');
     }
 }

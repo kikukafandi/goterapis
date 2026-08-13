@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\PhoneVerificationController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TherapistRegisterController;
 use App\Http\Controllers\CariController;
@@ -114,10 +115,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::patch('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');
 
-    Route::get('/terapis/{therapist}/pesan', [OrderController::class, 'create'])->name('pesan.create');
+    Route::get('/verifikasi-nomor', [PhoneVerificationController::class, 'show'])->name('phone.verify');
+    Route::post('/verifikasi-nomor/kirim', [PhoneVerificationController::class, 'send'])->middleware('throttle:3,1')->name('phone.send');
+    Route::post('/verifikasi-nomor', [PhoneVerificationController::class, 'confirm'])->middleware('throttle:10,1')->name('phone.confirm');
+
+    // Nomor WhatsApp wajib terbukti sebelum memesan — terapis menghubungi pelanggan lewat nomor itu.
+    Route::get('/terapis/{therapist}/pesan', [OrderController::class, 'create'])->middleware('phone')->name('pesan.create');
     Route::get('/terapis/{therapist}/ketersediaan', [OrderController::class, 'availability'])->name('pesan.availability');
     Route::get('/pesanan', [OrderController::class, 'index'])->name('pesanan.index');
-    Route::post('/pesanan', [OrderController::class, 'store'])->name('pesanan.store');
+    Route::post('/pesanan', [OrderController::class, 'store'])->middleware('phone')->name('pesanan.store');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('pesanan.show');
     Route::post('/pesanan/{order}/chat', [ChatMessageController::class, 'store'])->name('pesanan.chat.store');
     Route::post('/pesanan/{order}/laporan', [OrderReportController::class, 'store'])->middleware('throttle:5,60')->name('pesanan.reports.store');

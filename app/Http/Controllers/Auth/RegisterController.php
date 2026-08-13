@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
@@ -15,7 +16,7 @@ class RegisterController extends Controller
         return view('auth.daftar');
     }
 
-    public function register(Request $request)
+    public function register(Request $request, Otp $otp)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -38,6 +39,8 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('tutorial');
+        $otp->sendQuietly($user, 'daftar');
+
+        return redirect()->route('phone.verify');
     }
 }

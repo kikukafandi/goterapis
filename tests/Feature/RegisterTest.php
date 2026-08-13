@@ -25,7 +25,7 @@ class RegisterTest extends TestCase
             'legal_version' => 'PALSU',
         ]);
 
-        $response->assertRedirect('/tutorial');
+        $response->assertRedirect(route('phone.verify'));
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'budi@example.com',
@@ -91,7 +91,7 @@ class RegisterTest extends TestCase
             'legal_version' => 'PALSU',
         ]);
 
-        $response->assertRedirect(route('mitra.verifikasi'));
+        $response->assertRedirect(route('phone.verify'));
         $this->assertAuthenticated();
 
         $user = User::where('email', 'siti@example.com')->firstOrFail();

@@ -134,6 +134,8 @@ class TherapistProfileTest extends TestCase
         $user = User::factory()->create([
             'role' => 'therapist',
             'phone' => '081234567890',
+            // Gerbang OTP ganti nomor diuji terpisah di OtpTest.
+            'phone_verified_at' => null,
         ]);
         $profile = TherapistProfile::create([
             'user_id' => $user->id,
