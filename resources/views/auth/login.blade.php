@@ -5,123 +5,75 @@
 <div class="grid min-h-dvh lg:h-dvh lg:min-h-0 lg:grid-cols-2 lg:overflow-hidden">
 
     {{-- Panel gambar desktop --}}
-    <div class="relative hidden h-full overflow-hidden lg:block">
+    <div class="relative hidden h-full overflow-hidden bg-daun lg:block">
         <img
             src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=70&w=1000&h=1400"
             alt="Terapi dengan minyak herbal"
-            class="absolute inset-0 h-full w-full object-cover"
+            class="absolute inset-0 h-full w-full object-cover opacity-60"
         >
 
-        <div class="absolute inset-0 bg-daun/45"></div>
-
-        <div class="absolute bottom-10 left-10 right-10 text-white">
-            <p class="font-display text-3xl font-semibold">
-                Lanjutkan pesananmu dengan mudah.
+        <div class="absolute bottom-12 left-12 right-12 text-white">
+            <p class="font-display text-[38px] font-extrabold leading-tight text-balance">
+                Terapis tepercaya datang ke rumahmu.
             </p>
-            <p class="mt-2 max-w-sm text-white/85">
-                Terpercaya, transparan, dan tercatat.
+            <p class="mt-3 max-w-sm text-[15px] leading-relaxed text-white/85">
+                Pijat, bekam, terapi tubuh — sesuai jadwalmu. Bayar setelah pesanan diterima.
             </p>
         </div>
     </div>
 
     {{-- Form --}}
-    <div class="flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6 lg:h-dvh lg:min-h-0 lg:overflow-hidden lg:px-10 lg:py-6">
-        <div class="w-full max-w-sm">
+    <div class="flex min-h-dvh items-center justify-center bg-white px-5 py-10 sm:px-6 lg:h-dvh lg:min-h-0 lg:overflow-y-auto lg:px-10">
+        <div class="flex w-full max-w-sm flex-col">
 
-            <a
-                href="/"
-                class="mb-6 flex items-center gap-2 font-display text-2xl font-semibold text-daun"
-            >
-                <x-icon name="leaf" class="h-7 w-7" />
-                GoTerapis
+            <a href="/" class="flex flex-col items-center gap-3.5">
+                <x-logo variant="full" class="h-24" />
+                <span class="text-center text-sm font-medium leading-relaxed text-kabut-muda text-pretty">
+                    Terapis tepercaya datang ke rumahmu.<br>Pijat, bekam, terapi tubuh — sesuai jadwalmu.
+                </span>
             </a>
 
-            <h1 class="font-display text-2xl font-semibold text-arang">
-                Masuk ke akunmu
-            </h1>
-
-            <p class="mt-1 text-sm text-kabut">
-                Belum punya akun?
-                <a
-                    href="/daftar"
-                    class="font-semibold text-daun hover:underline"
-                >
-                    Daftar
-                </a>
-            </p>
-
-            @if ($errors->any())
-                <div class="mt-4 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm text-jahe">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            <form method="post" action="/masuk" class="mt-5 space-y-4">
+            <form method="post" action="/masuk" class="mt-9 flex flex-col gap-3">
                 @csrf
 
-                <div>
-                    <label class="mb-1.5 block text-sm font-semibold text-arang">
-                        Email
-                    </label>
+                <div class="flex flex-col gap-1.5">
+                    <label for="email" class="text-xs font-semibold text-arang">Email</label>
+                    <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus
+                           autocomplete="email" placeholder="nama@email.com" class="isian">
+                </div>
 
-                    <div class="flex items-center gap-2 rounded-xl border border-garis bg-white px-3 py-2.5 transition-colors focus-within:border-daun">
-                        <x-icon name="user" class="h-5 w-5 shrink-0 text-kabut" />
-
-                        <input
-                            name="email"
-                            type="email"
-                            value="{{ old('email') }}"
-                            required
-                            autofocus
-                            autocomplete="email"
-                            class="min-w-0 flex-1 bg-transparent text-sm text-arang outline-none"
-                            placeholder="nama@email.com"
-                        >
+                <div class="flex flex-col gap-1.5" x-data="{ show: false }">
+                    <label for="password" class="text-xs font-semibold text-arang">Kata sandi</label>
+                    <div class="relative">
+                        <input id="password" name="password" :type="show ? 'text' : 'password'" required
+                               autocomplete="current-password" placeholder="••••••••" class="isian pr-20">
+                        <button type="button" @click="show = !show" x-text="show ? 'Sembunyi' : 'Lihat'"
+                                class="absolute inset-y-0 right-3 text-xs font-bold text-daun hover:text-daun-tua"></button>
                     </div>
                 </div>
 
-                <div x-data="{ show: false }">
-                    <label class="mb-1.5 block text-sm font-semibold text-arang">
-                        Kata sandi
-                    </label>
-
-                    <div class="flex items-center gap-2 rounded-xl border border-garis bg-white px-3 py-2.5 transition-colors focus-within:border-daun">
-                        <x-icon name="shield" class="h-5 w-5 shrink-0 text-kabut" />
-
-                        <input
-                            name="password"
-                            :type="show ? 'text' : 'password'"
-                            required
-                            autocomplete="current-password"
-                            class="min-w-0 flex-1 bg-transparent text-sm text-arang outline-none"
-                            placeholder="••••••••"
-                        >
-
-                        <button
-                            type="button"
-                            @click="show = !show"
-                            class="shrink-0 text-xs font-semibold text-daun hover:text-daun-tua"
-                            x-text="show ? 'Sembunyi' : 'Lihat'"
-                        ></button>
+                @if ($errors->any())
+                    <div role="alert" class="flex items-start gap-2.5 rounded-xl border border-jahe-garis bg-jahe-muda px-3.5 py-3">
+                        <span class="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-jahe-terang"></span>
+                        <span class="text-xs font-medium leading-relaxed text-jahe">{{ $errors->first() }}</span>
                     </div>
-                </div>
+                @endif
 
-                <label class="flex cursor-pointer items-center gap-2 text-sm text-kabut">
-                    <input
-                        type="checkbox"
-                        name="remember"
-                        class="rounded border-garis text-daun focus:ring-daun"
-                    >
-                    <span>Ingat saya</span>
+                <label class="flex cursor-pointer items-center gap-2.5 text-xs font-medium text-kabut">
+                    <input type="checkbox" name="remember" class="h-4 w-4 rounded border-garis text-daun focus:ring-daun">
+                    Ingat saya
                 </label>
 
-                <button
-                    type="submit"
-                    class="w-full rounded-full bg-daun px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-daun-tua"
-                >
-                    Masuk
-                </button>
+                <button type="submit" class="btn-utama mt-1.5 w-full text-[15px]">Masuk</button>
             </form>
+
+            <div class="mt-10 flex flex-col items-center gap-4">
+                <p class="text-[13px] font-medium text-kabut-muda">
+                    Belum punya akun? <a href="/daftar" class="font-bold text-daun hover:text-daun-tua">Daftar</a>
+                </p>
+                <span class="h-px w-full bg-garis-muda"></span>
+                <a href="/daftar-terapis" class="text-xs font-semibold text-kabut-muda hover:text-daun">Daftar sebagai terapis →</a>
+            </div>
         </div>
     </div>
 </div>

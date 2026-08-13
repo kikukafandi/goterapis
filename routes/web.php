@@ -3,7 +3,9 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminPromotionBannerController;
+use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminTherapistDocumentController;
+use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\AdminWhatsAppController;
 use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
@@ -14,32 +16,59 @@ use App\Http\Controllers\CariController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\LegalController;
+use App\Http\Controllers\LocalSeoController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OrderReportController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TherapistBalanceController;
+use App\Http\Controllers\TherapistDashboardController;
 use App\Http\Controllers\TherapistLocationController;
 use App\Http\Controllers\TherapistOrderController;
 use App\Http\Controllers\TherapistProfileController;
 use App\Http\Controllers\TutorialController;
+use App\Models\Article;
+use App\Models\Service;
 use App\Models\TherapistProfile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     $therapists = TherapistProfile::query()
+        ->eligible()
         ->where('is_available', true)
         ->whereHas('user', fn ($query) => $query->whereNull('blocked_at'))
-        ->with(['user', 'services'])
+        ->with(['user', 'services' => fn ($query) => $query->where('is_active', true)])
         ->orderByDesc('is_featured')
         ->orderByDesc('rating_avg')
         ->limit(6)
         ->get();
+    $categories = Service::query()
+        ->where('is_active', true)
+        ->select('category')
+        ->distinct()
+        ->orderBy('category')
+        ->pluck('category');
+    $cities = TherapistProfile::query()
+        ->whereNotNull('city')
+        ->where('city', '!=', '')
+        ->distinct()
+        ->orderBy('city')
+        ->pluck('city');
+    $articles = Article::query()
+        ->whereNotNull('published_at')
+        ->where('published_at', '<=', now())
+        ->latest('published_at')
+        ->limit(3)
+        ->get();
 
-    return view('home', compact('therapists'));
+    return view('home', compact('therapists', 'categories', 'cities', 'articles'));
 })->name('home');
+Route::get('/sitemap.xml', [LocalSeoController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [LocalSeoController::class, 'robots'])->name('robots');
+Route::get('/terapis/{kategori}/di/{kotaSlug}', [LocalSeoController::class, 'landing'])->name('seo.local');
 Route::get('/legal/{document}', LegalController::class)
     ->whereIn('document', array_keys(config('legal.documents')))
     ->name('legal.show');
@@ -84,6 +113,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pesanan', [OrderController::class, 'store'])->name('pesanan.store');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('pesanan.show');
     Route::post('/pesanan/{order}/chat', [ChatMessageController::class, 'store'])->name('pesanan.chat.store');
+    Route::post('/pesanan/{order}/laporan', [OrderReportController::class, 'store'])->middleware('throttle:5,60')->name('pesanan.reports.store');
     Route::get('/chat', [ChatMessageController::class, 'index'])->name('chat');
     Route::post('/pesanan/{order}/bayar', [PaymentController::class, 'store'])->name('pesanan.pay');
     Route::patch('/pesanan/{order}/selesai', [OrderController::class, 'complete'])->name('pesanan.complete');
@@ -93,6 +123,10 @@ Route::middleware('auth')->group(function () {
 
 // Panel terapis (mitra) — kelola pesanan masuk
 Route::middleware(['auth', 'therapist'])->prefix('mitra')->name('mitra.')->group(function () {
+    Route::get('/', [TherapistDashboardController::class, 'index'])->name('dashboard');
+    Route::patch('/ketersediaan', [TherapistDashboardController::class, 'availability'])->name('availability');
+    Route::get('/verifikasi', [TherapistProfileController::class, 'verification'])->name('verifikasi');
+    Route::put('/dokumen/{document}', [TherapistProfileController::class, 'replaceDocument'])->name('dokumen.replace');
     Route::get('/profil', [TherapistProfileController::class, 'edit'])->name('profil.edit');
     Route::put('/profil', [TherapistProfileController::class, 'update'])->name('profil.update');
     Route::get('/saldo', [TherapistBalanceController::class, 'index'])->name('saldo');
@@ -104,13 +138,19 @@ Route::middleware(['auth', 'therapist'])->prefix('mitra')->name('mitra.')->group
     Route::patch('/pesanan/{order}/otw', [TherapistOrderController::class, 'enRoute'])->name('pesanan.en-route');
     Route::put('/pesanan/{order}/lokasi', [TherapistLocationController::class, 'update'])->middleware('throttle:therapist-location')->name('pesanan.location');
     Route::patch('/pesanan/{order}/tiba', [TherapistOrderController::class, 'arrive'])->name('pesanan.arrive');
-    Route::patch('/pesanan/{order}/mulai', [TherapistOrderController::class, 'start'])->name('pesanan.start');
+    Route::patch('/pesanan/{order}/mulai', [TherapistOrderController::class, 'start'])->middleware('throttle:start-order')->name('pesanan.start');
 });
 
 // Panel admin (dashboard custom)
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/whatsapp', AdminWhatsAppController::class)->name('whatsapp');
+    Route::get('/transaksi', [AdminTransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transaksi/{payment}', [AdminTransactionController::class, 'show'])->name('transactions.show');
+    Route::post('/transaksi/{payment}/refund', [AdminTransactionController::class, 'retryRefund'])->name('transactions.retry-refund');
+    Route::get('/laporan', [AdminReportController::class, 'index'])->name('reports.index');
+    Route::get('/laporan/{report}', [AdminReportController::class, 'show'])->name('reports.show');
+    Route::patch('/laporan/{report}', [AdminReportController::class, 'update'])->name('reports.update');
     Route::get('/penarikan', [AdminWithdrawalController::class, 'index'])->name('withdrawals.index');
     Route::patch('/penarikan/{withdrawal}/setujui', [AdminWithdrawalController::class, 'approve'])->name('withdrawals.approve');
     Route::patch('/penarikan/{withdrawal}/tolak', [AdminWithdrawalController::class, 'reject'])->name('withdrawals.reject');

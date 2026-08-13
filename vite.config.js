@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
                 refresh: true,
 
                 fonts: [
-                    bunny('Poppins', {
+                    bunny('Plus Jakarta Sans', {
                         weights: [400, 500, 600, 700, 800],
                     }),
 

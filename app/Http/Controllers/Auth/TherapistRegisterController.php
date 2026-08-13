@@ -24,7 +24,7 @@ class TherapistRegisterController extends Controller
             'services' => $services,
             'categoryLabels' => [
                 'pijat' => 'Pijat', 'bekam' => 'Bekam', 'kretek' => 'Kretek',
-                'refleksi' => 'Refleksi', 'lainnya' => 'Kerik, Totok & Lainnya',
+                'lainnya' => 'Kerik, Totok & Lainnya',
             ],
         ]);
     }
@@ -72,6 +72,11 @@ class TherapistRegisterController extends Controller
 
         if (! $request->boolean('serves_call') && ! $request->boolean('serves_place')) {
             return back()->withInput()->withErrors(['serves_call' => 'Pilih minimal satu model layanan: panggilan atau di tempat praktik.']);
+        }
+
+        $eligibleServiceIds = Service::availableTo($data['gender'])->whereIn('id', $data['services'])->pluck('id');
+        if ($eligibleServiceIds->count() !== count(array_unique($data['services']))) {
+            return back()->withInput()->withErrors(['services' => 'Pilihan layanan tidak tersedia untuk profilmu.']);
         }
 
         $profile = DB::transaction(function () use ($request, $data) {
@@ -127,7 +132,7 @@ class TherapistRegisterController extends Controller
         Auth::login($profile->user);
         $request->session()->regenerate();
 
-        return redirect()->route('tutorial')
-            ->with('success', 'Pendaftaran terkirim! Statusmu "Anggota Komunitas" — admin akan memeriksa dokumenmu untuk naik ke verifikasi berikutnya.');
+        return redirect()->route('mitra.verifikasi')
+            ->with('success', 'Pendaftaran terkirim! Tim kami akan memeriksa dokumenmu.');
     }
 }

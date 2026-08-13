@@ -43,7 +43,7 @@ class DemoTherapistSeeder extends Seeder
         );
 
         // Layanan + harga
-        $services = Service::whereIn('slug', ['pijat-kebugaran', 'pijat-capek'])->get();
+        $services = Service::whereIn('slug', ['pijat-kebugaran', 'spot-massage'])->get();
         $sync = [];
         foreach ($services as $s) {
             $sync[$s->id] = ['price' => 85000, 'duration_min' => 60];

@@ -116,7 +116,7 @@ class MidtransWebhookTest extends TestCase
 
         $order->refresh();
         $this->assertSame('pending_payment', $order->status);
-        $this->assertSame('failed', $order->payment->status);
+        $this->assertSame('expired', $order->payment->status);
     }
 
     public function test_notifikasi_lama_tidak_menurunkan_pembayaran_lunas(): void
@@ -162,6 +162,8 @@ class MidtransWebhookTest extends TestCase
             'amount' => 118_000,
             'status' => 'paid',
             'paid_at' => now(),
+            'refund_amount' => 118_000,
+            'refund_requested_at' => now(),
         ]);
         $job = new RefundLatePayment($order->id, 118_000);
         $gateway = app(PaymentGateway::class);

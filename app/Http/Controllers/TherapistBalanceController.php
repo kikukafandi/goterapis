@@ -16,13 +16,14 @@ class TherapistBalanceController extends Controller
     public function index(Request $request): View
     {
         $profile = $request->user()->therapistProfile()->firstOrFail();
-        $earned = $profile->earnings();
+        $earned = $profile->earnings()->whereHas('order', fn ($query) => $query->where('status', 'completed'));
         $reserved = $profile->withdrawals()->where('status', 'requested')->sum('amount');
 
         return view('mitra.saldo', [
             'pending' => (clone $earned)->where('available_at', '>', now())->sum('amount'),
             'available' => (clone $earned)->where('available_at', '<=', now())->sum('amount') - $reserved - $profile->withdrawals()->where('status', 'approved')->sum('amount'),
             'withdrawn' => $profile->withdrawals()->where('status', 'approved')->sum('amount'),
+            'earnings' => $profile->earnings()->with('order.user')->latest()->limit(10)->get(),
             'withdrawals' => $profile->withdrawals()->latest()->paginate(10),
             'profile' => $profile,
         ]);
@@ -34,10 +35,14 @@ class TherapistBalanceController extends Controller
 
         DB::transaction(function () use ($request, $data) {
             $profile = TherapistProfile::where('user_id', $request->user()->id)->lockForUpdate()->firstOrFail();
+            abort_unless($profile->isEligible(), 403);
             if (blank($profile->bank_name) || blank($profile->bank_account_number) || blank($profile->bank_account_name)) {
                 throw ValidationException::withMessages(['amount' => 'Lengkapi rekening bank di profil terlebih dahulu.']);
             }
-            $available = Earning::where('therapist_profile_id', $profile->id)->where('available_at', '<=', now())->sum('amount')
+            $available = Earning::where('therapist_profile_id', $profile->id)
+                ->where('available_at', '<=', now())
+                ->whereHas('order', fn ($query) => $query->where('status', 'completed'))
+                ->sum('amount')
                 - Withdrawal::where('therapist_profile_id', $profile->id)->whereIn('status', ['requested', 'approved'])->sum('amount');
             if ($data['amount'] > $available) {
                 throw ValidationException::withMessages(['amount' => 'Saldo tersedia tidak mencukupi.']);

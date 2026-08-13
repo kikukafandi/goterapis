@@ -21,12 +21,22 @@ class TherapistOrderController extends Controller
             return redirect()->route('akun')->with('error', 'Lengkapi profil terapis dulu untuk menerima pesanan.');
         }
 
+        $tab = $request->string('tab')->value();
+        $tab = in_array($tab, ['baru', 'berjalan', 'selesai'], true) ? $tab : 'baru';
+        $statuses = match ($tab) {
+            'baru' => ['pending_confirmation'],
+            'berjalan' => ['pending_payment', 'paid', 'accepted', 'therapist_en_route', 'therapist_arrived', 'in_progress'],
+            'selesai' => ['completed', 'rejected', 'cancelled', 'refunded', 'disputed'],
+        };
+
         $orders = Order::where('therapist_profile_id', $profile->id)
+            ->whereIn('status', $statuses)
             ->with(['user', 'service'])
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('mitra.pesanan', compact('orders'));
+        return view('mitra.pesanan', compact('orders', 'tab'));
     }
 
     public function show(Request $request, Order $order)
@@ -49,7 +59,9 @@ class TherapistOrderController extends Controller
             return $stop;
         }
 
-        $order->changeStatus('pending_payment', 'Terapis menerima pesanan.', ['accepted_at' => now()]);
+        if (! $order->changeStatus('pending_payment', 'Terapis menerima pesanan.', ['accepted_at' => now()], self::ACTIONABLE)) {
+            return back()->with('error', 'Pesanan sudah ditindak sebelumnya.');
+        }
 
         return back()->with('success', "Pesanan {$order->code} diterima. Menunggu pembayaran pelanggan.");
     }
@@ -65,10 +77,12 @@ class TherapistOrderController extends Controller
             'cancel_reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $order->changeStatus('rejected', 'Terapis menolak pesanan.', [
+        if (! $order->changeStatus('rejected', 'Terapis menolak pesanan.', [
             'cancelled_at' => now(),
             'cancel_reason' => $data['cancel_reason'] ?? null,
-        ]);
+        ], self::ACTIONABLE)) {
+            return back()->with('error', 'Pesanan sudah ditindak sebelumnya.');
+        }
 
         return back()->with('success', "Pesanan {$order->code} ditolak.");
     }
@@ -82,7 +96,9 @@ class TherapistOrderController extends Controller
             return back()->with('error', 'Status OTW hanya tersedia untuk layanan panggilan yang sudah dibayar.');
         }
 
-        $order->changeStatus('therapist_en_route', 'Terapis sedang menuju lokasi pelanggan.');
+        if (! $order->changeStatus('therapist_en_route', 'Terapis sedang menuju lokasi pelanggan.', from: ['paid'])) {
+            return back()->with('error', 'Status pesanan sudah berubah. Muat ulang halaman.');
+        }
 
         return back()->with('success', "Status pesanan {$order->code} diubah menjadi OTW.");
     }
@@ -96,7 +112,9 @@ class TherapistOrderController extends Controller
             return back()->with('error', 'Status tiba hanya tersedia setelah terapis OTW.');
         }
 
-        $order->changeStatus('therapist_arrived', 'Terapis sudah tiba di lokasi pelanggan.');
+        if (! $order->changeStatus('therapist_arrived', 'Terapis sudah tiba di lokasi pelanggan.', from: ['therapist_en_route'])) {
+            return back()->with('error', 'Status pesanan sudah berubah. Muat ulang halaman.');
+        }
         Cache::forget(TherapistLocationController::cacheKey($order));
 
         return back()->with('success', "Terapis sudah tiba untuk pesanan {$order->code}.");
@@ -140,7 +158,9 @@ class TherapistOrderController extends Controller
             return back()->with('error', 'PIN salah. Minta PIN yang benar ke pelanggan.');
         }
 
-        $order->changeStatus('in_progress', 'Layanan telah dimulai.', ['started_at' => now()]);
+        if (! $order->changeStatus('in_progress', 'Layanan telah dimulai.', ['started_at' => now()], [$requiredStatus])) {
+            return back()->with('error', 'Status pesanan sudah berubah. Muat ulang halaman.');
+        }
 
         return back()->with('success', "Layanan {$order->code} dimulai.");
     }
@@ -167,6 +187,9 @@ class TherapistOrderController extends Controller
 
         if ($profile === null || $order->therapist_profile_id !== $profile->id) {
             return redirect()->route('mitra.pesanan')->with('error', 'Pesanan tidak ditemukan.');
+        }
+        if (! $profile->isEligible()) {
+            return back()->with('error', 'Verifikasi profil belum disetujui.');
         }
 
         return null;

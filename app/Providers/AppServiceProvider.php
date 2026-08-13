@@ -46,5 +46,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('therapist-location', fn (Request $request) => Limit::perMinute(12)
             ->by($request->user()->id.'.'.$request->route('order')));
+        RateLimiter::for('start-order', fn (Request $request) => Limit::perMinute(5)
+            ->by($request->user()->id.'.'.$request->route('order')));
     }
 }

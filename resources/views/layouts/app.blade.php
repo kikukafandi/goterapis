@@ -3,38 +3,52 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#2e5a39">
-    <title>@yield('title', 'GoTerapis') — Temukan Terapis di Sekitarmu</title>
-    <meta name="description" content="@yield('meta', 'Platform komunitas & pemesanan terapis pijat, bekam, kretek, dan refleksi. Cari terapis terpercaya di sekitarmu, atur jadwal, bayar aman.')">
+    <meta name="theme-color" content="#4fbf17">
+    <link rel="icon" type="image/png" href="{{ asset('images/brand/logo-mark.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/brand/logo-mark.png') }}">
+    @php
+        $seoTitle = trim($__env->yieldContent('title', 'Temukan Terapis di Sekitarmu'));
+        $seoTitle = $seoTitle === 'GoTerapis' || str_contains($seoTitle, 'GoTerapis') ? $seoTitle : $seoTitle.' — GoTerapis';
+        $seoDescription = trim($__env->yieldContent('meta', 'Platform komunitas dan pemesanan terapis pijat, bekam, kretek, dan terapi tubuh terpercaya di sekitarmu.'));
+        $seoCanonical = trim($__env->yieldContent('canonical', url()->current()));
+        $seoImage = trim($__env->yieldContent('image', asset('images/brand/logo-mark.png')));
+        $seoRobots = trim($__env->yieldContent('robots', request()->routeIs('cari', 'akun', 'tutorial', 'notifications.*', 'pesan.*', 'pesanan.*', 'chat', 'mitra.*') || request()->query() ? 'noindex, nofollow' : 'index, follow'));
+        $seoType = trim($__env->yieldContent('type', 'website'));
+    @endphp
+    <title>{{ $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta name="robots" content="{{ $seoRobots }}">
+    <link rel="canonical" href="{{ $seoCanonical }}">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:site_name" content="GoTerapis">
+    <meta property="og:type" content="{{ $seoType }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:url" content="{{ $seoCanonical }}">
+    <meta property="og:image" content="{{ $seoImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ $seoImage }}">
+    @if (request()->routeIs('home'))
+        <script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@graph' => [['@type' => 'Organization', 'name' => 'GoTerapis', 'url' => route('home'), 'logo' => asset('images/brand/logo-mark.png')], ['@type' => 'WebSite', 'name' => 'GoTerapis', 'url' => route('home'), 'inLanguage' => 'id-ID']]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>[x-cloak]{display:none!important}</style>
     @stack('head')
 </head>
 <body class="min-h-dvh antialiased">
+    @php($isTherapistShell = auth()->user()?->isTherapist() && request()->routeIs('mitra.*', 'chat', 'notifications.*'))
     @include('partials.header')
     <x-notifications />
 
     <main class="pb-24 md:pb-0">
-        @if (session('success'))
-            <div class="mx-auto max-w-6xl px-4 pt-4">
-                <div class="flex items-start gap-2 rounded-xl border border-daun/25 bg-daun-muda px-4 py-3 text-sm text-daun-tua">
-                    <x-icon name="shield" class="mt-0.5 h-5 w-5 shrink-0" />
-                    <span>{{ session('success') }}</span>
-                </div>
-            </div>
-        @endif
-        @if (session('error'))
-            <div class="mx-auto max-w-6xl px-4 pt-4">
-                <div class="flex items-start gap-2 rounded-xl border border-jahe/30 bg-jahe/10 px-4 py-3 text-sm text-jahe">
-                    <x-icon name="shield" class="mt-0.5 h-5 w-5 shrink-0" />
-                    <span>{{ session('error') }}</span>
-                </div>
-            </div>
-        @endif
         @yield('content')
     </main>
 
-    @include('partials.footer')
+    @unless ($isTherapistShell)
+        @include('partials.footer')
+    @endunless
     @include('partials.bottom-nav')
 
     @stack('scripts')

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TherapistDocument extends Model
 {
+    public const REQUIRED_TYPES = ['ktp'];
+
     protected $guarded = ['id'];
 
     public function therapistProfile(): BelongsTo

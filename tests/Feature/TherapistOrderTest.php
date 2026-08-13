@@ -19,7 +19,7 @@ class TherapistOrderTest extends TestCase
         $therapistUser = User::factory()->create(['role' => 'therapist']);
         $profile = TherapistProfile::create([
             'user_id' => $therapistUser->id,
-            'verification_status' => 'anggota',
+            'verification_status' => 'identitas',
             'serves_call' => true,
             'city' => 'Yogyakarta',
             'is_available' => true,
@@ -44,6 +44,20 @@ class TherapistOrderTest extends TestCase
         return [$therapistUser, $profile, $order];
     }
 
+    public function test_daftar_pesanan_terapis_dikelompokkan_per_tab(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder();
+
+        $this->actingAs($therapistUser)->get(route('mitra.pesanan'))
+            ->assertOk()
+            ->assertSee('Baru')
+            ->assertSee($order->user->name);
+
+        $this->actingAs($therapistUser)->get(route('mitra.pesanan', ['tab' => 'selesai']))
+            ->assertOk()
+            ->assertDontSee($order->user->name);
+    }
+
     public function test_terapis_menerima_pesanan(): void
     {
         [$therapistUser, , $order] = $this->therapistWithOrder();
@@ -55,6 +69,19 @@ class TherapistOrderTest extends TestCase
         $order->refresh();
         $this->assertSame('pending_payment', $order->status);
         $this->assertNotNull($order->accepted_at);
+    }
+
+    public function test_terapis_belum_disetujui_tidak_dapat_menjalankan_action_pesanan(): void
+    {
+        [$therapistUser, $profile, $order] = $this->therapistWithOrder();
+        $profile->update(['verification_status' => 'anggota']);
+
+        $this->actingAs($therapistUser)
+            ->patch(route('mitra.pesanan.accept', $order))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertSame('pending_confirmation', $order->fresh()->status);
     }
 
     public function test_terapis_menolak_pesanan_dengan_alasan(): void
@@ -149,14 +176,25 @@ class TherapistOrderTest extends TestCase
 
         $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
             ->assertOk()
-            ->assertSee('Saya sudah tiba')
-            ->assertDontSee('PIN 6 digit');
+            ->assertSee('Saya tiba')
+            ->assertDontSee('PIN dari pasien');
 
         $order->update(['status' => 'therapist_arrived']);
 
         $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
             ->assertOk()
-            ->assertSee('PIN 6 digit');
+            ->assertSee('PIN dari pasien');
+    }
+
+    public function test_tautan_peta_memakai_titik_yang_dikirim_pasien(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder('paid');
+        $order->update(['address' => 'Alamat tertulis', 'lat' => -7.7975000, 'lng' => 110.3705000]);
+
+        $this->actingAs($therapistUser)->get(route('mitra.pesanan.show', $order))
+            ->assertOk()
+            ->assertSee('query=-7.7975%2C110.3705', false)
+            ->assertDontSee('query=Alamat%20tertulis', false);
     }
 
     public function test_terapis_di_titik_pelanggan_bisa_mulai(): void
@@ -218,6 +256,38 @@ class TherapistOrderTest extends TestCase
         $this->assertSame('therapist_arrived', $order->fresh()->status);
     }
 
+    public function test_endpoint_pin_dibatasi_per_terapis_dan_pesanan(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder('therapist_arrived');
+
+        foreach (range(1, 5) as $attempt) {
+            $this->actingAs($therapistUser)
+                ->patch(route('mitra.pesanan.start', $order), ['pin' => '000000'])
+                ->assertRedirect();
+        }
+
+        $this->actingAs($therapistUser)
+            ->patch(route('mitra.pesanan.start', $order), ['pin' => '000000'])
+            ->assertTooManyRequests();
+        $this->assertSame('therapist_arrived', $order->fresh()->status);
+    }
+
+    public function test_transisi_stale_tidak_menimpa_status_terbaru(): void
+    {
+        [$therapistUser, , $order] = $this->therapistWithOrder();
+        $staleOrder = Order::findOrFail($order->id);
+        $order->update(['status' => 'rejected']);
+
+        $this->actingAs($therapistUser);
+        $this->assertFalse($staleOrder->changeStatus(
+            'pending_payment',
+            'Terapis menerima pesanan.',
+            ['accepted_at' => now()],
+            ['pending_confirmation'],
+        ));
+        $this->assertSame('rejected', $order->fresh()->status);
+    }
+
     public function test_pengguna_biasa_tidak_bisa_membuka_panel_terapis(): void
     {
         $user = User::factory()->create(['role' => 'user']);
@@ -231,5 +301,18 @@ class TherapistOrderTest extends TestCase
 
         $user = User::factory()->create(['role' => 'user']);
         $this->actingAs($user)->get(route('akun'))->assertOk();
+
+        $therapist = User::factory()->create(['role' => 'therapist']);
+        TherapistProfile::create(['user_id' => $therapist->id, 'verification_status' => 'identitas', 'city' => 'Yogyakarta']);
+        $this->actingAs($therapist)->get(route('akun'))
+            ->assertOk()
+            ->assertSee('Pesanan saya')
+            ->assertSee('Panel mitra')
+            ->assertSee(route('pesanan.index'))
+            ->assertSee(route('mitra.dashboard'));
+        $this->actingAs($therapist)->get(route('pesanan.index'))
+            ->assertOk()
+            ->assertSee(route('pesanan.index'))
+            ->assertSee('Panel mitra');
     }
 }

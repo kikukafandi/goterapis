@@ -74,7 +74,7 @@ class OrderWorkflowTest extends TestCase
     {
         $customer = User::factory()->create(['role' => 'user']);
         $therapist = User::factory()->create(['role' => 'therapist']);
-        $profile = TherapistProfile::create(['user_id' => $therapist->id, 'verification_status' => 'anggota', 'serves_call' => true, 'city' => 'Yogyakarta', 'is_available' => true]);
+        $profile = TherapistProfile::create(['user_id' => $therapist->id, 'verification_status' => 'identitas', 'serves_call' => true, 'city' => 'Yogyakarta', 'is_available' => true]);
         $service = Service::create(['name' => 'Pijat', 'slug' => 'pijat-workflow', 'category' => 'pijat']);
         $order = Order::create(['code' => 'GT-WORKFLOW', 'user_id' => $customer->id, 'therapist_profile_id' => $profile->id, 'service_id' => $service->id, 'model' => 'panggilan', 'scheduled_at' => now()->addDay(), 'duration_min' => 60, 'price' => 100000, 'transport_fee' => 0, 'service_fee' => 3000, 'total' => 103000, 'commission' => 15000, 'payout' => 85000, 'status' => 'paid', 'start_pin' => '123456']);
 

@@ -105,7 +105,9 @@ class ChatTest extends TestCase
             ->assertOk()->assertSee($first->therapistProfile->user->name)->assertDontSee($second->therapistProfile->user->name)
             ->assertSee('Belum ada pesan. Ketuk untuk memulai chat.');
         $this->actingAs($first->therapistProfile->user)->get(route('chat'))
-            ->assertOk()->assertSee($first->user->name)->assertDontSee($second->user->name);
+            ->assertOk()->assertSee('Pesan')->assertSee($first->user->name)->assertDontSee($second->user->name);
+        $this->actingAs($first->user)->get(route('chat'))
+            ->assertOk()->assertSee('Percakapan')->assertDontSee('Percakapan pelanggan akan muncul');
         $this->actingAs(User::factory()->create(['role' => 'therapist']))->get(route('chat'))
             ->assertOk()->assertSee('Belum ada percakapan');
     }
@@ -124,7 +126,26 @@ class ChatTest extends TestCase
             ->assertOk()->assertSee('1 pesan baru')->assertSee('Pesan sendiri');
     }
 
-    public function test_chat_menampilkan_ringkasan_pesanan(): void
+    public function test_inbox_terapis_menampilkan_pesanan_sebagai_pembeli_dan_penjual_dengan_tautan_tepat(): void
+    {
+        $soldOrder = $this->order();
+        $therapist = $soldOrder->therapistProfile->user;
+        $boughtOrder = $this->order();
+        $boughtOrder->update(['user_id' => $therapist->id]);
+
+        $this->actingAs($therapist)->get(route('chat'))
+            ->assertOk()
+            ->assertSee($soldOrder->user->name)
+            ->assertSee($boughtOrder->therapistProfile->user->name)
+            ->assertSee(route('mitra.pesanan.show', $soldOrder))
+            ->assertSee(route('pesanan.show', $boughtOrder));
+
+        $this->actingAs($therapist)->get(route('pesanan.show', $boughtOrder))
+            ->assertOk()
+            ->assertSee(route('pesanan.show', $boughtOrder));
+    }
+
+    public function test_chat_di_detail_pesanan_tidak_menampilkan_tautan_ke_halaman_yang_sama(): void
     {
         $order = $this->order();
 
@@ -132,7 +153,7 @@ class ChatTest extends TestCase
             ->assertOk()
             ->assertSee($order->code)
             ->assertSee($order->service->name)
-            ->assertSee('Lihat detail pesanan');
+            ->assertDontSee('Lihat detail pesanan');
     }
 
     public function test_membuka_detail_menandai_hanya_pesan_masuk_dan_akses_tidak_sah_tidak_mengubahnya(): void
