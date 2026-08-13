@@ -44,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // Rem brute force: ketat per kombinasi email+IP, longgar per IP untuk password spraying.
+        RateLimiter::for('auth', fn (Request $request) => [
+            Limit::perMinute(5)->by(str((string) $request->input('email'))->lower()->toString().'|'.$request->ip()),
+            Limit::perMinute(20)->by($request->ip()),
+        ]);
         RateLimiter::for('therapist-location', fn (Request $request) => Limit::perMinute(12)
             ->by($request->user()->id.'.'.$request->route('order')));
         RateLimiter::for('start-order', fn (Request $request) => Limit::perMinute(5)

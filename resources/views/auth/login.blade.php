@@ -33,6 +33,12 @@
                 </span>
             </a>
 
+            @if (session('status'))
+                <div role="status" class="mt-6 rounded-xl border border-daun-garis bg-daun-muda px-3.5 py-3 text-xs font-medium leading-relaxed text-daun-tua">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             <form method="post" action="/masuk" class="mt-9 flex flex-col gap-3">
                 @csrf
 
@@ -59,10 +65,13 @@
                     </div>
                 @endif
 
-                <label class="flex cursor-pointer items-center gap-2.5 text-xs font-medium text-kabut">
-                    <input type="checkbox" name="remember" class="h-4 w-4 rounded border-garis text-daun focus:ring-daun">
-                    Ingat saya
-                </label>
+                <div class="flex items-center justify-between gap-3">
+                    <label class="flex cursor-pointer items-center gap-2.5 text-xs font-medium text-kabut">
+                        <input type="checkbox" name="remember" class="h-4 w-4 rounded border-garis text-daun focus:ring-daun">
+                        Ingat saya
+                    </label>
+                    <a href="{{ route('password.request') }}" class="text-xs font-semibold text-daun hover:text-daun-tua">Lupa kata sandi?</a>
+                </div>
 
                 <button type="submit" class="btn-utama mt-1.5 w-full text-[15px]">Masuk</button>
             </form>

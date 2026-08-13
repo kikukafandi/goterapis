@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminWhatsAppController;
 use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TherapistRegisterController;
 use App\Http\Controllers\CariController;
@@ -89,13 +90,18 @@ Route::get('/produk/{product:slug}', [ProductController::class, 'show'])->name('
 // Auth (login bersama, redirect sesuai role)
 Route::middleware('guest')->group(function () {
     Route::get('/masuk', [LoginController::class, 'show'])->name('login');
-    Route::post('/masuk', [LoginController::class, 'login']);
+    Route::post('/masuk', [LoginController::class, 'login'])->middleware('throttle:auth');
 
     Route::get('/daftar', [RegisterController::class, 'show'])->name('register');
-    Route::post('/daftar', [RegisterController::class, 'register']);
+    Route::post('/daftar', [RegisterController::class, 'register'])->middleware('throttle:auth');
 
     Route::get('/daftar-terapis', [TherapistRegisterController::class, 'show'])->name('register.therapist');
-    Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register']);
+    Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register'])->middleware('throttle:auth');
+
+    Route::get('/lupa-sandi', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/lupa-sandi', [PasswordResetController::class, 'email'])->middleware('throttle:auth')->name('password.email');
+    Route::get('/atur-ulang-sandi/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/atur-ulang-sandi', [PasswordResetController::class, 'update'])->middleware('throttle:auth')->name('password.update');
 });
 Route::post('/keluar', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
