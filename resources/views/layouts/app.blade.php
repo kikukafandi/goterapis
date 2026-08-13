@@ -43,6 +43,7 @@
     <x-notifications />
 
     <main class="pb-24 md:pb-0">
+        <x-flash class="mx-auto mt-4 w-full max-w-[1300px] px-4 sm:px-6" />
         @yield('content')
     </main>
 

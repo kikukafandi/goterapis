@@ -74,7 +74,7 @@ class OrderReportTest extends TestCase
 
         $this->assertSame('disputed', $order->fresh()->status);
         $order->therapistProfile->update(['verification_status' => 'identitas', 'bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti']);
-        $this->actingAs($order->therapistProfile->user)->post(route('mitra.withdrawals.store'), ['amount' => 10000])->assertSessionHasErrors('amount');
+        $this->actingAs($order->therapistProfile->user)->post(route('mitra.withdrawals.store'), ['amount' => 10000, 'code' => '000000'])->assertSessionHasErrors('amount');
     }
 
     public function test_laporan_ditolak_di_luar_window_dan_saat_dana_masuk_payout(): void

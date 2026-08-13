@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Service;
 use App\Models\TherapistDocument;
+use App\Support\Otp;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class TherapistProfileController extends Controller
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, Otp $otp): RedirectResponse
     {
         $user = $request->user();
         $profile = $user->therapistProfile()->firstOrFail();
@@ -73,6 +74,14 @@ class TherapistProfileController extends Controller
         if (! $request->boolean('serves_call') && ! $request->boolean('serves_place')) {
             return back()->withInput()->withErrors(['serves_call' => 'Pilih minimal satu model layanan.']);
         }
+        // Nomor WhatsApp adalah kunci penarikan saldo, jadi penggantiannya harus disetujui dari nomor lama.
+        $phoneChanged = $data['phone'] !== $user->phone;
+        if ($phoneChanged && $user->phone_verified_at !== null) {
+            $code = (string) $request->input('code');
+            if ($code === '' || ! $otp->verify($user, 'nomor', $code)) {
+                return back()->withInput()->withErrors(['code' => 'Masukkan kode verifikasi yang dikirim ke nomor WhatsApp lamamu.']);
+            }
+        }
         $eligibleServiceIds = Service::availableTo($data['gender'])->whereIn('id', $data['services'])->pluck('id');
         if ($eligibleServiceIds->count() !== count(array_unique($data['services']))) {
             return back()->withInput()->withErrors(['services' => 'Pilihan layanan tidak tersedia untuk profilmu.']);
@@ -86,13 +95,17 @@ class TherapistProfileController extends Controller
         $oldAvatar = $user->avatar_path;
         $newAvatar = $request->file('avatar')?->store("therapist/{$user->id}", 'public');
 
-        DB::transaction(function () use ($request, $user, $profile, $data, $newAvatar) {
+        DB::transaction(function () use ($request, $user, $profile, $data, $newAvatar, $phoneChanged) {
             $user->update([
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'phone' => $data['phone'],
                 ...($newAvatar ? ['avatar_path' => $newAvatar] : []),
             ]);
+            // Nomor baru belum terbukti dimiliki; pembuktiannya lewat kode penarikan berikutnya.
+            if ($phoneChanged) {
+                $user->forceFill(['phone_verified_at' => null])->save();
+            }
             $profile->update([
                 'gender' => $data['gender'],
                 'experience_years' => $data['experience_years'],

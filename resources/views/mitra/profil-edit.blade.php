@@ -31,6 +31,12 @@
         <div class="mt-4 rounded-card border border-jahe/30 bg-jahe/10 p-4 text-sm text-arang">Periksa kembali isian yang ditandai.</div>
     @endif
 
+    {{-- Form terpisah agar tombol kirim kode tidak ikut menyimpan profil. --}}
+    <form id="kirim-kode-nomor" method="post" action="{{ route('mitra.otp.send') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="purpose" value="nomor">
+    </form>
+
     <form method="post" action="{{ route('mitra.profil.update') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
         @csrf @method('PUT')
         <section class="rounded-card border border-garis bg-white p-5 sm:p-6">
@@ -39,6 +45,19 @@
                 <x-field name="name" label="Nama lengkap" :value="$profile->user->name" required />
                 <x-field name="phone" label="Nomor WhatsApp" :value="$profile->user->phone" required inputmode="tel" />
                 <x-field name="email" label="Email" type="email" :value="$profile->user->email" required class="sm:col-span-2" />
+                @if ($profile->user->phone_verified_at)
+                    {{-- Nomor terverifikasi jadi kunci penarikan saldo, jadi penggantiannya harus disetujui dari nomor lama. --}}
+                    <div class="sm:col-span-2">
+                        <label class="mb-1.5 block text-sm font-semibold text-arang">Kode verifikasi <span class="font-normal text-kabut-muda">— hanya bila nomor WhatsApp diganti</span></label>
+                        <div class="flex gap-2">
+                            <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 digit"
+                                   class="w-full rounded-xl border bg-white px-3 py-2.5 text-sm tracking-widest outline-none focus:border-daun {{ $errors->has('code') ? 'border-jahe' : 'border-garis' }}">
+                            <button type="submit" form="kirim-kode-nomor" class="btn-garis shrink-0 text-xs">Kirim kode</button>
+                        </div>
+                        <span class="mt-1.5 block text-xs text-kabut-muda">Kode dikirim ke nomor lamamu ({{ $profile->user->phone }}).</span>
+                        @error('code')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
+                    </div>
+                @endif
                 <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-arang">Foto profil baru</label><input type="file" name="avatar" accept="image/*" class="w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm"></div>
             </div>
         </section>

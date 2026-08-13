@@ -19,9 +19,9 @@ class WithdrawalTest extends TestCase
         [$therapist, $profile] = $this->therapist();
         Earning::create(['therapist_profile_id' => $profile->id, 'order_id' => $this->orderId($profile), 'amount' => 50000, 'available_at' => now()->addHour()]);
 
-        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000])->assertSessionHasErrors('amount');
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000, 'code' => '000000'])->assertSessionHasErrors('amount');
         $profile->update(['bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti']);
-        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000])->assertSessionHasErrors('amount');
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000, 'code' => '000000'])->assertSessionHasErrors('amount');
         $this->assertDatabaseCount('withdrawals', 0);
     }
 
@@ -31,7 +31,7 @@ class WithdrawalTest extends TestCase
         $profile->update(['verification_status' => 'anggota']);
         Earning::create(['therapist_profile_id' => $profile->id, 'order_id' => $this->orderId($profile), 'amount' => 50000, 'available_at' => now()]);
 
-        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000])->assertForbidden();
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 10000, 'code' => '000000'])->assertForbidden();
 
         $this->assertDatabaseCount('withdrawals', 0);
     }
@@ -41,17 +41,17 @@ class WithdrawalTest extends TestCase
         [$therapist, $profile] = $this->therapist(['bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti']);
         Earning::create(['therapist_profile_id' => $profile->id, 'order_id' => $this->orderId($profile), 'amount' => 50000, 'available_at' => now()]);
 
-        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 40000])->assertSessionHasNoErrors();
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 40000, 'code' => $this->kodeOtp($therapist, 'penarikan')])->assertSessionHasNoErrors();
         $profile->update(['bank_name' => 'BCA', 'bank_account_number' => '999']);
 
         $this->assertDatabaseHas('withdrawals', ['amount' => 40000, 'bank_name' => 'BRI', 'bank_account_number' => '123', 'bank_account_name' => 'Siti', 'status' => 'requested']);
-        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 20000])->assertSessionHasErrors('amount');
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 20000, 'code' => '000000'])->assertSessionHasErrors('amount');
         $this->actingAs($therapist)->get(route('mitra.saldo'))->assertSee('Rp10.000');
     }
 
     private function therapist(array $attributes = []): array
     {
-        $user = User::factory()->create(['role' => 'therapist']);
+        $user = User::factory()->create(['role' => 'therapist', 'phone' => '08'.fake()->unique()->numerify('##########')]);
         $profile = TherapistProfile::create([...$attributes, 'user_id' => $user->id, 'verification_status' => 'identitas', 'city' => 'Yogyakarta']);
 
         return [$user, $profile];

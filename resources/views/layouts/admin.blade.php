@@ -106,6 +106,7 @@
     <x-notifications />
 
     <main class="mx-auto w-full max-w-[1300px] px-4 py-7 sm:px-8 sm:pb-10">
+        <x-flash class="mb-5" />
         @yield('content')
     </main>
 </div>

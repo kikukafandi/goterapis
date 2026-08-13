@@ -39,15 +39,31 @@
         <section id="tarik-dana" class="kartu p-5">
             <h2 class="font-display text-base font-extrabold text-arang">Penarikan dana</h2>
             <p class="mt-2 text-xs text-kabut-muda">{{ $rekeningLengkap ? $profile->bank_name.' · '.$profile->bank_account_number.' · a.n. '.$profile->bank_account_name : 'Rekening tujuan belum lengkap.' }}</p>
+            {{-- Form terpisah agar tombol kirim kode tidak ikut mengirim permintaan penarikan. --}}
+            <form id="kirim-kode-penarikan" method="post" action="{{ route('mitra.otp.send') }}" class="hidden">
+                @csrf
+                <input type="hidden" name="purpose" value="penarikan">
+            </form>
+
             <form method="post" action="{{ route('mitra.withdrawals.store') }}" class="mt-4 space-y-3">
                 @csrf
                 <label class="block">
                     <span class="mb-1.5 block text-xs font-semibold text-arang">Nominal</span>
                     <input name="amount" type="number" min="10000" max="{{ max(0, $available) }}" required placeholder="Minimal Rp10.000" class="isian font-bold">
                 </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-arang">Kode verifikasi WhatsApp</span>
+                    <div class="flex gap-2">
+                        <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required
+                               placeholder="6 digit" class="isian font-bold tracking-widest">
+                        <button type="submit" form="kirim-kode-penarikan" class="btn-garis shrink-0 text-xs">Kirim kode</button>
+                    </div>
+                    <span class="mt-1.5 block text-xs text-kabut-muda">Dikirim ke {{ $profile->user->phone ?? 'nomor WhatsApp di profilmu' }}. Berlaku 5 menit.</span>
+                </label>
                 <button class="btn-utama w-full text-sm" @disabled(! $rekeningLengkap || $available < 10000)>Ajukan penarikan</button>
             </form>
             @error('amount')<p class="mt-2 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
+            @error('code')<p class="mt-2 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
             <a href="{{ route('mitra.profil.edit') }}" class="mt-3 inline-block text-xs font-bold text-daun">Ubah rekening tujuan →</a>
         </section>
 
