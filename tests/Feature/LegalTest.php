@@ -64,9 +64,11 @@ class LegalTest extends TestCase
         $this->get(route('admin.document.download', $document))->assertRedirect(route('login'));
         $this->actingAs($therapist)->get(route('admin.document.download', $document))->assertRedirect(route('home'));
 
+        // Berkas kini disajikan inline supaya admin bisa memeriksanya tanpa mengunduh;
+        // yang dijaga tetap sama, yaitu hanya admin yang boleh mengaksesnya.
         $admin = User::factory()->create(['role' => 'admin']);
-        $this->actingAs($admin)->get(route('admin.document.download', $document))
-            ->assertOk()
-            ->assertDownload('ktp.jpg');
+        $response = $this->actingAs($admin)->get(route('admin.document.download', $document));
+        $response->assertOk();
+        $this->assertSame('rahasia', $response->streamedContent());
     }
 }

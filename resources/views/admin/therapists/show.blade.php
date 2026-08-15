@@ -58,13 +58,22 @@
             @forelse ($therapist->documents as $doc)
                 <div class="flex flex-col gap-4 rounded-2xl border {{ $borderStyle[$doc->status] ?? 'border-garis-muda' }} p-4 sm:p-[18px]">
                     <div class="flex flex-wrap items-center gap-4">
-                        <span class="grid h-[54px] w-[72px] shrink-0 place-items-center rounded-xl bg-garis-muda text-[10px] font-semibold text-kabut-samar">SCAN</span>
+                        @php $berkas = route('admin.document.download', $doc); @endphp
+                        @if (str($doc->path)->lower()->endsWith('.pdf'))
+                            <a href="{{ $berkas }}" target="_blank" rel="noopener"
+                               class="grid h-[54px] w-[72px] shrink-0 place-items-center rounded-xl bg-garis-muda text-[10px] font-semibold text-kabut hover:bg-garis">PDF</a>
+                        @else
+                            <a href="{{ $berkas }}" target="_blank" rel="noopener" class="shrink-0" title="Buka ukuran penuh">
+                                <img src="{{ $berkas }}" alt="Pratinjau {{ $docLabels[$doc->type] ?? $doc->type }}" loading="lazy"
+                                     class="h-[54px] w-[72px] rounded-xl border border-garis object-cover hover:opacity-90">
+                            </a>
+                        @endif
                         <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                             <span class="truncate text-sm font-bold text-arang">{{ $docLabels[$doc->type] ?? $doc->type }}</span>
                             <span class="truncate text-[11px] font-medium text-kabut-samar">Diunggah {{ $doc->created_at->translatedFormat('j M Y') }}</span>
                         </div>
                         <span class="shrink-0 rounded-full px-3 py-2 text-[10px] font-bold {{ $badgeStyle[$doc->status] ?? 'bg-kertas text-kabut' }}">{{ $statusLabels[$doc->status] ?? $doc->status }}</span>
-                        <a href="{{ route('admin.document.download', $doc) }}"
+                        <a href="{{ $berkas }}" download
                            class="shrink-0 rounded-[10px] border border-garis bg-white px-3.5 py-2.5 text-[11px] font-semibold text-kabut hover:bg-kertas">Unduh</a>
                     </div>
 

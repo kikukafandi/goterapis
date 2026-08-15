@@ -59,6 +59,22 @@ class TherapistDocumentReplacementTest extends TestCase
         $this->assertSame('rejected', $document->fresh()->status);
     }
 
+    public function test_admin_melihat_pratinjau_dokumen_tanpa_perlu_mengunduh(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('dokumen/lama.jpg', 'isi-berkas');
+        [, $profile, $document] = $this->document('pending');
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Disajikan inline supaya bisa dipasang langsung sebagai <img>, bukan dipaksa mengunduh.
+        $response = $this->actingAs($admin)->get(route('admin.document.download', $document));
+        $response->assertOk();
+        $this->assertStringNotContainsString('attachment', (string) $response->headers->get('content-disposition'));
+
+        $this->actingAs($admin)->get(route('admin.therapist', $profile))
+            ->assertSee('<img src="'.route('admin.document.download', $document).'"', false);
+    }
+
     private function document(string $status = 'rejected'): array
     {
         $user = User::factory()->create(['role' => 'therapist']);
