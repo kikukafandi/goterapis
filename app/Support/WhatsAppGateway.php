@@ -41,6 +41,8 @@ class WhatsAppGateway
         return Http::baseUrl(rtrim((string) config('services.whatsapp.url'), '/'))
             ->withToken((string) config('services.whatsapp.token'))
             ->acceptJson()
-            ->timeout(10);
+            // whatsapp-web.js berjalan di atas Puppeteer; getNumberId + sendMessage biasa
+            // menembus 10 detik saat sesi baru bangun.
+            ->timeout(30);
     }
 }

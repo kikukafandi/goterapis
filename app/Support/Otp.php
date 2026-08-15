@@ -34,15 +34,18 @@ class Otp
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
+        // Kode disimpan sebelum dikirim: gateway WhatsApp kerap membalas lambat atau gagal
+        // padahal pesannya sudah sampai. Kalau penyimpanan menunggu balasan, kode yang
+        // diterima pengguna tak pernah bisa dipakai. Kode nganggur hangus sendiri dalam 5 menit.
+        Cache::put($this->key($user, $purpose), Hash::make($code), self::TTL_SECONDS);
+
         try {
             $this->gateway->send($phone, "Kode verifikasi GoTerapis: {$code}\nBerlaku 5 menit. Jangan berikan kode ini kepada siapa pun, termasuk yang mengaku admin.");
         } catch (\Throwable $exception) {
             report($exception);
 
-            throw ValidationException::withMessages(['code' => 'Kode gagal dikirim. Coba lagi sebentar lagi.']);
+            throw ValidationException::withMessages(['code' => 'Kode gagal dikirim. Cek WhatsApp-mu dulu — kalau kodenya sudah masuk, langsung isikan saja.']);
         }
-
-        Cache::put($this->key($user, $purpose), Hash::make($code), self::TTL_SECONDS);
     }
 
     /** Kirim tanpa menggagalkan alur pemanggil; dipakai tepat setelah pendaftaran. */

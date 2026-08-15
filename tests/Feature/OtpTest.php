@@ -114,6 +114,33 @@ class OtpTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $therapist->id, 'phone' => '081200002222']);
     }
 
+    public function test_kode_tetap_berlaku_meski_gateway_gagal_membalas(): void
+    {
+        [$therapist] = $this->therapistBersaldo();
+
+        // Gateway kerap membalas gagal/putus padahal pesannya sudah sampai ke WhatsApp.
+        // Host lain dipakai karena stub dari setUp() tidak bisa ditimpa, hanya ditumpuk.
+        config(['services.whatsapp.url' => 'http://wa-gagal.test']);
+        Http::fake(['http://wa-gagal.test/messages' => Http::response(['message' => 'timeout'], 500)]);
+
+        $this->actingAs($therapist)->post(route('mitra.otp.send'), ['purpose' => 'penarikan'])
+            ->assertSessionHasErrors('code');
+
+        $code = null;
+        Http::assertSent(function ($request) use (&$code) {
+            preg_match('/(\d{6})/', (string) $request['message'], $matches);
+            $code = $matches[1] ?? $code;
+
+            return true;
+        });
+
+        // Kode yang terlanjur diterima pengguna harus tetap bisa dipakai.
+        $this->actingAs($therapist)->post(route('mitra.withdrawals.store'), ['amount' => 40000, 'code' => $code])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('withdrawals', ['amount' => 40000, 'status' => 'requested']);
+    }
+
     /** @return array{User, TherapistProfile, Service} */
     private function therapistBersaldo(): array
     {
