@@ -91,4 +91,18 @@ class OrderReportTest extends TestCase
         $this->actingAs($order->user)->post(route('pesanan.reports.store', $order), $payload)->assertSessionHasErrors('detail');
         $this->assertSame('completed', $order->fresh()->status);
     }
+
+    public function test_alasan_penolakan_tampil_di_halaman_pesanan(): void
+    {
+        $order = $this->order();
+        $order->changeStatus('completed', 'Selesai.', ['completed_at' => now()->subHours(25)], ['in_progress']);
+
+        // Modal tertutup saat halaman dimuat ulang, jadi penolakan harus ikut tercetak —
+        // tanpa ini pelapor mengira laporannya masuk padahal tidak ada yang tersimpan.
+        $this->actingAs($order->user)
+            ->from(route('pesanan.show', $order))
+            ->followingRedirects()
+            ->post(route('pesanan.reports.store', $order), ['reason' => 'pelecehan_seksual', 'detail' => str_repeat('Keterangan ', 3), 'source' => 'order'])
+            ->assertSee('Laporan hanya dapat dikirim', false);
+    }
 }

@@ -1,6 +1,12 @@
 @props(['order', 'source' => 'order'])
 
-<div x-data="{ open: false }">
+@php
+    // Penolakan server (jendela 24 jam lewat, dana terapis sudah dicairkan) balik sebagai
+    // error validasi. Tanpa ini modal tertutup diam-diam dan pelapor mengira laporannya masuk.
+    $ditolak = old('source') === $source && ($errors->has('detail') || $errors->has('reason'));
+@endphp
+
+<div x-data="{ open: @json($ditolak) }">
     <button type="button" @click="open = true" class="inline-flex items-center gap-2 text-xs font-semibold text-jahe hover:underline">
         <x-icon name="shield" class="h-4 w-4" /> Laporkan perilaku tidak pantas
     </button>
@@ -18,6 +24,9 @@
             <form method="post" action="{{ route('pesanan.reports.store', $order) }}" class="mt-5 space-y-4">
                 @csrf
                 <input type="hidden" name="source" value="{{ $source }}">
+                @if ($ditolak)
+                    <p class="rounded-xl border border-jahe-garis bg-jahe-muda px-4 py-3 text-xs font-semibold leading-relaxed text-jahe">{{ $errors->first('detail') ?: $errors->first('reason') }}</p>
+                @endif
                 <label class="block">
                     <span class="mb-1.5 block text-xs font-semibold text-arang">Jenis kejadian</span>
                     <select name="reason" required class="isian">
@@ -27,7 +36,7 @@
                 </label>
                 <label class="block">
                     <span class="mb-1.5 block text-xs font-semibold text-arang">Ceritakan kejadian</span>
-                    <textarea name="detail" required minlength="20" maxlength="5000" rows="6" class="isian resize-y" placeholder="Jelaskan apa yang terjadi, kapan, dan hal penting lain yang perlu ditinjau."></textarea>
+                    <textarea name="detail" required minlength="20" maxlength="5000" rows="6" class="isian resize-y" placeholder="Jelaskan apa yang terjadi, kapan, dan hal penting lain yang perlu ditinjau.">{{ $ditolak ? old('detail') : '' }}</textarea>
                     <span class="mt-1 block text-[11px] text-kabut">20–5.000 karakter</span>
                 </label>
                 <div class="flex gap-2.5">
