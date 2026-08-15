@@ -167,9 +167,17 @@ Bekerja gaya **lazy senior dev**: solusi terpendek yang benar-benar jalan. Naik 
 
 ### Desain & UI
 - **Bahasa Indonesia** untuk semua teks UI dan komentar baru (ikuti gaya file sekitar).
-- **Warna pakai token tema** di `resources/css/app.css`, jangan hex mentah: `daun` / `daun-tua` / `daun-muda` (brand hijau), `kunyit` (aksen), `jahe` (clay, hemat), `kertas` (latar), `arang` (teks utama), `kabut` (teks sekunder), `garis` (border). Palet blok datar — **tanpa gradasi**.
-- Radius kartu: `rounded-card`. Judul: `font-display`.
-- **Cek komponen dulu sebelum bikin baru.** Ikon lewat `<x-icon name="..." />` (daftar SVG di `components/icon.blade.php`) dan `<x-cat-icon :slug />` (foto kustom otomatis dari `public/images/kategori/<slug>.png`, fallback SVG).
+- **Warna pakai token tema** di `resources/css/app.css`, jangan hex mentah. Daftar lengkapnya — pilih varian yang tepat, jangan mengarang nama baru:
+  - Hijau brand: `daun` (utama), `daun-tua` (teks kontras, hover/tekan), `daun-muda` (tint: chip, badge, latar seksi), `daun-garis` (garis di atas tint). `daun-terang` & `daun-neon` cuma alias `daun`, jangan dipakai di kode baru.
+  - Kuning aksen (bintang rating, status menunggu): `kunyit`, `kunyit-muda`, `kunyit-garis`, `kunyit-tua` (teks di atas tint).
+  - Clay (tolak, gagal, bahaya — hemat pemakaiannya): `jahe`, `jahe-terang`, `jahe-muda`, `jahe-garis`.
+  - Latar: `kertas` (halaman), `kertas-app` (kanvas panel), `kertas-isian` (input & baris tabel), `malam` (blok gelap: sidebar admin, kartu ajakan).
+  - Teks: `arang` (utama), `kabut` (sekunder), `kabut-muda` (meta kecil), `kabut-samar` (placeholder).
+  - Garis: `garis` (border), `garis-muda` (pembatas dalam kartu).
+  - Palet blok datar — **tanpa gradasi**. Saat ini nol `gradient` di seluruh CSS & Blade; jangan jadi yang pertama.
+- Radius kartu: `rounded-card` (satu-satunya token radius). Judul: `font-display`. Tersedia juga `font-serif` (Fraunces) untuk aksen.
+- **Cek komponen dulu sebelum bikin baru.** Ikon lewat `<x-icon name="..." />` (daftar SVG di `components/icon.blade.php`) dan `<x-cat-icon :slug :src />` (urutan: ikon unggahan admin lewat `:src`, lalu `public/images/kategori/<slug>.png`, terakhir SVG fallback).
+- **Kategori layanan dinamis**, diatur admin di `/admin/kategori` (tabel `categories`, model `Category`). Jangan mengeraskan daftar kategori di controller atau view — pakai `Category::daftar()` (slug => nama) atau `Category::terurut()`.
 - Layout: `layouts/app` (publik, ada header/footer/bottom-nav), `layouts/bare` (auth), `layouts/admin` (panel). Extend yang sesuai, jangan bikin shell baru.
 
 ### Aset
@@ -177,11 +185,20 @@ Bekerja gaya **lazy senior dev**: solusi terpendek yang benar-benar jalan. Naik 
 
 ## Deployment
 
-Belum disiapkan. Proyek ini akan di-deploy ke VPS sendiri (bukan VPS wartamerdeka —
-blok lama di sini salah salin dari proyek itu dan sudah dihapus).
+Sudah jalan di VPS sendiri: `goterapis.com` (103.103.20.11), aplikasi di `/var/www/goterapis`,
+Ubuntu 22.04 + PHP 8.4 + nginx. Remote: `github.com/kikukafandi/goterapis`.
 
-Belum ada `.github/workflows/`, dan direktori ini belum `git init`.
+**Deploy otomatis — jangan deploy manual.** Timer systemd `goterapis-autodeploy` mengecek
+`origin/master` tiap 2 menit lalu menjalankan `/usr/local/bin/goterapis-deploy`, yang sudah
+menangani: `artisan down` → `git reset --hard` → `composer install`/`npm ci` (hanya kalau
+lockfile berubah) → `npm run build` → `migrate --force` → `config:cache`, `route:cache`,
+`view:cache` → restart `php8.4-fpm`, `goterapis-queue`, `goterapis-reverb` → `artisan up`.
+Situs turun ~1-3 menit tiap deploy (deploy in-place, tanpa rilis ber-symlink).
 
-Catatan operasional saat nanti dipasang: `Order::expireUnpaid()` dijadwalkan tiap menit
-lewat `routes/console.php`, jadi cron `* * * * * php /path/artisan schedule:run` wajib ada
-di server — tanpa itu pesanan yang tak dibayar tidak pernah batal otomatis.
+Konsekuensinya: **push ke `master` = rilis ke produksi.** Kerjaan yang belum siap tayang
+ditahan di branch `dev`. Dan karena `config:cache` ikut jalan, variabel `.env` baru harus
+sudah terpasang di server **sebelum** push — kalau tidak, config ter-cache dengan nilai kosong.
+
+Cron `schedule:run` sudah terpasang di `/etc/cron.d/goterapis` (bukan crontab user, jadi
+`crontab -l` yang kosong bukan berarti hilang). Ini yang menjalankan `Order::expireUnpaid()`
+tiap menit.
