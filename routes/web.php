@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminPromotionBannerController;
@@ -35,6 +36,7 @@ use App\Http\Controllers\TherapistOrderController;
 use App\Http\Controllers\TherapistProfileController;
 use App\Http\Controllers\TutorialController;
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\Service;
 use App\Models\TherapistProfile;
 use Illuminate\Support\Facades\Route;
@@ -49,12 +51,10 @@ Route::get('/', function () {
         ->orderByDesc('rating_avg')
         ->limit(6)
         ->get();
-    $categories = Service::query()
-        ->where('is_active', true)
-        ->select('category')
-        ->distinct()
-        ->orderBy('category')
-        ->pluck('category');
+    // Hanya kategori yang benar-benar punya layanan aktif yang tampil di beranda.
+    $categories = Category::terurut()
+        ->whereIn('slug', Service::where('is_active', true)->distinct()->pluck('category'))
+        ->get();
     $cities = TherapistProfile::query()
         ->whereNotNull('city')
         ->where('city', '!=', '')
@@ -166,6 +166,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/transaksi', [AdminTransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaksi/{payment}', [AdminTransactionController::class, 'show'])->name('transactions.show');
     Route::post('/transaksi/{payment}/refund', [AdminTransactionController::class, 'retryRefund'])->name('transactions.retry-refund');
+    Route::get('/kategori', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::post('/kategori', [AdminCategoryController::class, 'store'])->name('categories.store');
+    Route::post('/kategori/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/kategori/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+
     Route::get('/laporan', [AdminReportController::class, 'index'])->name('reports.index');
     Route::get('/laporan/{report}', [AdminReportController::class, 'show'])->name('reports.show');
     Route::patch('/laporan/{report}', [AdminReportController::class, 'update'])->name('reports.update');

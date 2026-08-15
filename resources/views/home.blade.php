@@ -1,8 +1,6 @@
 @extends('layouts.app')
 
 @php
-    $categoryLabels = ['pijat' => 'Pijat', 'bekam' => 'Bekam', 'kretek' => 'Kretek', 'lainnya' => 'Lainnya'];
-
     $steps = [
         ['Pilih terapis', 'Bandingkan profil, layanan, harga, dan ulasan terapis di kotamu.'],
         ['Atur jadwal & alamat', 'Pilih waktu yang tersedia dan tentukan lokasi layanan.'],
@@ -35,9 +33,9 @@
         </div>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             @foreach ($categories as $category)
-                <a href="{{ route('cari', ['kategori' => $category]) }}" class="flex flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center hover:border-daun-terang">
-                    <span class="h-[62px] w-[62px] overflow-hidden rounded-full bg-garis-muda"><x-cat-icon :slug="$category" class="h-full w-full" /></span>
-                    <span class="text-[13px] font-semibold text-arang">{{ $categoryLabels[$category] ?? str($category)->headline() }}</span>
+                <a href="{{ route('cari', ['kategori' => $category->slug]) }}" class="flex flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center hover:border-daun-terang">
+                    <span class="h-[62px] w-[62px] overflow-hidden rounded-full bg-garis-muda"><x-cat-icon :slug="$category->slug" :src="$category->iconUrl()" class="h-full w-full" /></span>
+                    <span class="text-[13px] font-semibold text-arang">{{ $category->name }}</span>
                 </a>
             @endforeach
         </div>

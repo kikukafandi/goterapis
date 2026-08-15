@@ -1,11 +1,11 @@
-@props(['slug'])
+@props(['slug', 'src' => null])
 
 @php
-    // Slot gambar kustom: taruh file di public/images/kategori/<slug>.(webp|svg|png)
-    // dan otomatis dipakai menggantikan SVG fallback di bawah.
-    // ponytail: file_exists per-render; cukup untuk 5 kategori statis.
-    $img = null;
-    foreach (['webp', 'svg', 'png'] as $ext) {
+    // Urutan gambar: ikon unggahan admin, lalu file bawaan di
+    // public/images/kategori/<slug>.(webp|svg|png), terakhir SVG fallback di bawah.
+    // ponytail: file_exists per-render; cukup untuk segelintir kategori.
+    $img = $src;
+    foreach ($img ? [] : ['webp', 'svg', 'png'] as $ext) {
         if (file_exists(public_path("images/kategori/{$slug}.{$ext}"))) {
             $img = asset("images/kategori/{$slug}.{$ext}");
             break;

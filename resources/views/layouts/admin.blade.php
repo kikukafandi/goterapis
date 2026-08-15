@@ -25,6 +25,7 @@
         ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'active' => request()->routeIs('admin.withdrawals.*'), 'count' => $antreanPenarikan],
         ['label' => 'Transaksi', 'href' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*')],
         ['label' => 'Laporan', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'count' => $antreanLaporan],
+        ['label' => 'Kategori', 'href' => route('admin.categories.index'), 'active' => request()->routeIs('admin.categories.*')],
         ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*')],
         ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*')],
         ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*')],

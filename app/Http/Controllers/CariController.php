@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\TherapistProfile;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -12,7 +13,7 @@ class CariController extends Controller
 {
     public function index(Request $request)
     {
-        $categories = ['pijat' => 'Pijat', 'bekam' => 'Bekam', 'kretek' => 'Kretek', 'lainnya' => 'Kerik & Totok'];
+        $categories = Category::daftar();
         $data = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'kategori' => ['nullable', Rule::in(array_keys($categories))],

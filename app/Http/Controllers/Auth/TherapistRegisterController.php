@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Service;
 use App\Models\TherapistProfile;
 use App\Models\User;
@@ -23,10 +24,7 @@ class TherapistRegisterController extends Controller
 
         return view('auth.daftar-terapis', [
             'services' => $services,
-            'categoryLabels' => [
-                'pijat' => 'Pijat', 'bekam' => 'Bekam', 'kretek' => 'Kretek',
-                'lainnya' => 'Kerik, Totok & Lainnya',
-            ],
+            'categoryLabels' => Category::daftar(),
         ]);
     }
 
