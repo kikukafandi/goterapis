@@ -185,6 +185,8 @@
                     Daftar
                 </button>
 
+                <x-google-button label="Daftar dengan Google" />
+
                 <p class="text-center text-xs text-kabut">
                     Mau menawarkan jasa?
                     <a

@@ -76,6 +76,8 @@
                 <button type="submit" class="btn-utama mt-1.5 w-full text-[15px]">Masuk</button>
             </form>
 
+            <x-google-button label="Masuk dengan Google" />
+
             <div class="mt-10 flex flex-col items-center gap-4">
                 <p class="text-[13px] font-medium text-kabut-muda">
                     Belum punya akun? <a href="/daftar" class="font-bold text-daun hover:text-daun-tua">Daftar</a>

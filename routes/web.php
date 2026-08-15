@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\AdminWhatsAppController;
 use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PhoneVerificationController;
@@ -99,6 +100,9 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/daftar-terapis', [TherapistRegisterController::class, 'show'])->name('register.therapist');
     Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register'])->middleware('throttle:auth');
+
+    Route::get('/auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:auth')->name('google.redirect');
+    Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:auth')->name('google.callback');
 
     Route::get('/lupa-sandi', [PasswordResetController::class, 'request'])->name('password.request');
     Route::post('/lupa-sandi', [PasswordResetController::class, 'email'])->middleware('throttle:auth')->name('password.email');
