@@ -63,6 +63,15 @@ class TherapistProfile extends Model
             && ! $this->documents()->whereIn('type', TherapistDocument::REQUIRED_TYPES)->where('status', '!=', 'approved')->exists();
     }
 
+    /**
+     * Pelanggan hanya boleh memesan terapis sesama jenis. Pemesan yang jenis kelaminnya
+     * belum terisi (atau tamu) dibiarkan lewat di sini — middleware `gender` yang memaksanya.
+     */
+    public function isBookableBy(?User $user): bool
+    {
+        return $user?->gender === null || $user->gender === $this->gender;
+    }
+
     public function scopeEligible($query)
     {
         return $query->where('verification_status', '!=', 'anggota')

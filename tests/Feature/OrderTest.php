@@ -21,6 +21,7 @@ class OrderTest extends TestCase
         $therapistUser = User::factory()->create(['role' => 'therapist']);
         $profile = TherapistProfile::create([
             'user_id' => $therapistUser->id,
+            'gender' => 'pria',
             'verification_status' => 'identitas',
             'serves_call' => true,
             'serves_place' => false,

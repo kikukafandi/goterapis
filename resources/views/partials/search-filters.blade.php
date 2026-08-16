@@ -17,15 +17,22 @@
     </div>
 </div>
 
+{{-- Filter gender hilang begitu jenis kelamin pelanggan diketahui: pilihannya sudah terkunci. --}}
 <div class="mt-5 border-t border-garis-muda pt-5">
     <p class="text-xs font-bold text-arang">Gender terapis</p>
-    <div class="mt-3 space-y-1">
-        @foreach (['' => 'Semua', 'pria' => 'Pria', 'wanita' => 'Wanita'] as $value => $label)
-            <a href="{{ request()->fullUrlWithQuery(['gender' => $value ?: null, 'page' => null]) }}" class="flex items-center gap-2.5 py-2 text-[13px] font-medium text-kabut">
-                <span class="grid h-[18px] w-[18px] place-items-center rounded-[5px] border-2 {{ ($gender ?: '') === $value ? 'border-daun-terang bg-daun-terang text-white' : 'border-garis bg-white' }}">@if (($gender ?: '') === $value)<span class="text-[10px] font-extrabold">✓</span>@endif</span>{{ $label }}
-            </a>
-        @endforeach
-    </div>
+    @if (auth()->user()?->gender)
+        <p class="mt-3 text-[13px] font-medium text-kabut">
+            Hanya terapis {{ auth()->user()->gender }} — terapis melayani pelanggan dengan jenis kelamin yang sama.
+        </p>
+    @else
+        <div class="mt-3 space-y-1">
+            @foreach (['' => 'Semua', 'pria' => 'Pria', 'wanita' => 'Wanita'] as $value => $label)
+                <a href="{{ request()->fullUrlWithQuery(['gender' => $value ?: null, 'page' => null]) }}" class="flex items-center gap-2.5 py-2 text-[13px] font-medium text-kabut">
+                    <span class="grid h-[18px] w-[18px] place-items-center rounded-[5px] border-2 {{ ($gender ?: '') === $value ? 'border-daun-terang bg-daun-terang text-white' : 'border-garis bg-white' }}">@if (($gender ?: '') === $value)<span class="text-[10px] font-extrabold">✓</span>@endif</span>{{ $label }}
+                </a>
+            @endforeach
+        </div>
+    @endif
 </div>
 
 <div class="mt-5 border-t border-garis-muda pt-5">

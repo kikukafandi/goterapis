@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\AdminWhatsAppController;
 use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\Auth\GenderController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -47,6 +48,7 @@ Route::get('/', function () {
         ->where('is_available', true)
         ->whereHas('user', fn ($query) => $query->whereNull('blocked_at'))
         ->with(['user', 'services' => fn ($query) => $query->where('is_active', true)])
+        ->when(auth()->user()?->gender, fn ($query, $gender) => $query->where('gender', $gender))
         ->orderByDesc('is_featured')
         ->orderByDesc('rating_avg')
         ->limit(6)
@@ -120,14 +122,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');
 
     Route::get('/verifikasi-nomor', [PhoneVerificationController::class, 'show'])->name('phone.verify');
+    Route::post('/jenis-kelamin', GenderController::class)->name('gender.store');
     Route::post('/verifikasi-nomor/kirim', [PhoneVerificationController::class, 'send'])->middleware('throttle:3,1')->name('phone.send');
     Route::post('/verifikasi-nomor', [PhoneVerificationController::class, 'confirm'])->middleware('throttle:10,1')->name('phone.confirm');
 
     // Nomor WhatsApp wajib terbukti sebelum memesan — terapis menghubungi pelanggan lewat nomor itu.
-    Route::get('/terapis/{therapist}/pesan', [OrderController::class, 'create'])->middleware('phone')->name('pesan.create');
+    // Jenis kelamin wajib terisi karena terapis hanya melayani pelanggan sesama jenis.
+    Route::get('/terapis/{therapist}/pesan', [OrderController::class, 'create'])->middleware(['phone', 'gender'])->name('pesan.create');
     Route::get('/terapis/{therapist}/ketersediaan', [OrderController::class, 'availability'])->name('pesan.availability');
     Route::get('/pesanan', [OrderController::class, 'index'])->name('pesanan.index');
-    Route::post('/pesanan', [OrderController::class, 'store'])->middleware('phone')->name('pesanan.store');
+    Route::post('/pesanan', [OrderController::class, 'store'])->middleware(['phone', 'gender'])->name('pesanan.store');
     Route::get('/pesanan/{order}', [OrderController::class, 'show'])->name('pesanan.show');
     Route::post('/pesanan/{order}/chat', [ChatMessageController::class, 'store'])->name('pesanan.chat.store');
     Route::post('/pesanan/{order}/laporan', [OrderReportController::class, 'store'])->middleware('throttle:5,60')->name('pesanan.reports.store');

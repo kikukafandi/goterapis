@@ -29,7 +29,9 @@ class CariController extends Controller
         $kategori = $data['kategori'] ?? null;
         $kota = $data['kota'] ?? null;
         $model = $data['model'] ?? null;
-        $gender = $data['gender'] ?? null;
+        // Pelanggan yang jenis kelaminnya sudah terisi hanya melihat terapis sesama jenis —
+        // filter manual di URL tidak bisa menembusnya.
+        $gender = $request->user()?->gender ?? ($data['gender'] ?? null);
         $sort = $data['sort'] ?? 'rekomendasi';
         $latitude = isset($data['lat']) ? (float) $data['lat'] : null;
         $longitude = isset($data['lng']) ? (float) $data['lng'] : null;

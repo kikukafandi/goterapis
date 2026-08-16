@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\EnsureGenderIsSet;
 use App\Http\Middleware\EnsurePhoneIsVerified;
 use App\Http\Middleware\EnsureTherapist;
 use App\Http\Middleware\EnsureUserIsNotBlocked;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => EnsureAdmin::class,
             'therapist' => EnsureTherapist::class,
             'phone' => EnsurePhoneIsVerified::class,
+            'gender' => EnsureGenderIsSet::class,
         ]);
 
         // Webhook Midtrans dipanggil server-ke-server; verifikasi lewat signature, bukan CSRF.

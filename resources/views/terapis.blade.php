@@ -99,8 +99,14 @@
                 <p class="flex items-center gap-2"><x-icon name="calendar" class="h-5 w-5 text-daun" /> Atur jadwal saat memesan</p>
                 <p class="flex items-center gap-2"><x-icon name="pin" class="h-5 w-5 text-daun" /> {{ $therapist->serves_call ? 'Tersedia layanan panggilan' : 'Layanan di tempat praktik' }}</p>
             </div>
-            <a href="{{ route('pesan.create', $therapist) }}" class="mt-6 block rounded-xl bg-daun px-6 py-4 text-center text-sm font-bold text-white transition-colors hover:bg-daun-tua">Pesan sekarang</a>
-            <p class="mt-3 text-center text-xs leading-5 text-kabut">Pilih layanan dan jadwal pada langkah berikutnya.</p>
+            @if ($therapist->isBookableBy(auth()->user()))
+                <a href="{{ route('pesan.create', $therapist) }}" class="mt-6 block rounded-xl bg-daun px-6 py-4 text-center text-sm font-bold text-white transition-colors hover:bg-daun-tua">Pesan sekarang</a>
+                <p class="mt-3 text-center text-xs leading-5 text-kabut">Pilih layanan dan jadwal pada langkah berikutnya.</p>
+            @else
+                <p class="mt-6 rounded-xl bg-kunyit-muda px-4 py-3 text-center text-xs leading-5 text-kunyit-tua">
+                    Terapis ini melayani pelanggan {{ $therapist->gender }} saja.
+                </p>
+            @endif
         </aside>
     </div>
 </div>
@@ -108,7 +114,11 @@
 <div class="fixed inset-x-0 bottom-16 z-30 border-t border-garis bg-white px-4 py-3 md:bottom-0 lg:hidden">
     <div class="mx-auto flex max-w-3xl items-center justify-between gap-4">
         <div><p class="text-xs text-kabut">mulai</p><p class="text-lg font-bold text-arang">Rp{{ number_format($therapist->services->min('pivot.price') ?? 0, 0, ',', '.') }}</p></div>
-        <a href="{{ route('pesan.create', $therapist) }}" class="flex-1 rounded-xl bg-daun px-6 py-3 text-center text-sm font-bold text-white sm:flex-none">Pesan sekarang</a>
+        @if ($therapist->isBookableBy(auth()->user()))
+            <a href="{{ route('pesan.create', $therapist) }}" class="flex-1 rounded-xl bg-daun px-6 py-3 text-center text-sm font-bold text-white sm:flex-none">Pesan sekarang</a>
+        @else
+            <p class="flex-1 text-right text-xs leading-5 text-kabut">Melayani pelanggan {{ $therapist->gender }} saja.</p>
+        @endif
     </div>
 </div>
 @endsection

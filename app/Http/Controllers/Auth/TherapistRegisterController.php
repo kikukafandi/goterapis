@@ -85,6 +85,8 @@ class TherapistRegisterController extends Controller
                 'phone' => $data['phone'],
                 'password' => $data['password'],
                 'role' => 'therapist',
+                // Disalin ke akun supaya terapis tak ditanyai lagi saat ia sendiri memesan.
+                'gender' => $data['gender'],
                 'avatar_path' => $request->file('avatar')->store("therapist/{$data['email']}", 'public'),
                 'legal_version' => config('legal.version'),
                 'legal_accepted_at' => now(),

@@ -23,6 +23,7 @@ class OrderController extends Controller
         abort_if(! $therapist->is_available || ! $therapist->isEligible(), 404);
         abort_if($request->user()->role === 'admin', 403);
         abort_if($therapist->user_id === $request->user()->id, 403);
+        abort_unless($therapist->isBookableBy($request->user()), 403, 'Terapis ini hanya melayani pelanggan dengan jenis kelamin yang sama.');
 
         $therapist->load(['user', 'services' => fn ($query) => $query->availableTo($therapist->gender)]);
 
@@ -95,6 +96,7 @@ class OrderController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($data['therapist_profile_id']);
             abort_if($therapist->user_id === $request->user()->id, 403);
+            abort_unless($therapist->isBookableBy($request->user()), 403, 'Terapis ini hanya melayani pelanggan dengan jenis kelamin yang sama.');
 
             $service = $therapist->services()->availableTo($therapist->gender)->where('services.id', $data['service_id'])->first();
             if ($service === null) {

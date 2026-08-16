@@ -14,7 +14,11 @@ class PhoneVerificationController extends Controller
 {
     public function show(Request $request): View|RedirectResponse
     {
-        return $request->user()->phone_verified_at === null
+        $user = $request->user();
+
+        // Halaman ini juga jadi tempat melengkapi jenis kelamin — dua syarat yang sama-sama
+        // wajib sebelum memesan, jadi tak perlu layar terpisah.
+        return $user->phone_verified_at === null || $user->gender === null
             ? view('auth.verifikasi-nomor')
             : redirect()->to($this->tujuan($request));
     }
