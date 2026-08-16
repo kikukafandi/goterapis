@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -44,8 +45,25 @@ class Otp
         } catch (\Throwable $exception) {
             report($exception);
 
-            throw ValidationException::withMessages(['code' => 'Kode gagal dikirim. Cek WhatsApp-mu dulu — kalau kodenya sudah masuk, langsung isikan saja.']);
+            throw ValidationException::withMessages(['code' => $this->alasanGagal($exception)]);
         }
+    }
+
+    /**
+     * Alasan penolakan hanya ditampilkan apa adanya untuk 422 dan 503, satu-satunya status
+     * yang pesannya kita tulis sendiri di whatsapp-gateway/server.js ("Nomor tidak terdaftar
+     * di WhatsApp.", "WhatsApp belum terhubung.") sehingga aman dan berguna bagi pengguna.
+     * Kegagalan lain — 500, 401, koneksi putus — kerap terjadi padahal pesannya sudah sampai,
+     * jadi pengguna diminta mengecek WhatsApp-nya dulu.
+     */
+    private function alasanGagal(\Throwable $exception): string
+    {
+        $response = $exception instanceof RequestException ? $exception->response : null;
+        $pesan = in_array($response?->status(), [422, 503], true) ? $response->json('message') : null;
+
+        return filled($pesan) && is_string($pesan)
+            ? $pesan
+            : 'Kode gagal dikirim. Cek WhatsApp-mu dulu — kalau kodenya sudah masuk, langsung isikan saja.';
     }
 
     /** Kirim tanpa menggagalkan alur pemanggil; dipakai tepat setelah pendaftaran. */

@@ -141,6 +141,17 @@ class OtpTest extends TestCase
         $this->assertDatabaseHas('withdrawals', ['amount' => 40000, 'status' => 'requested']);
     }
 
+    public function test_penolakan_gateway_dijelaskan_apa_adanya(): void
+    {
+        [$therapist] = $this->therapistBersaldo();
+
+        config(['services.whatsapp.url' => 'http://wa-tolak.test']);
+        Http::fake(['http://wa-tolak.test/messages' => Http::response(['message' => 'Nomor tidak terdaftar di WhatsApp.'], 422)]);
+
+        $this->actingAs($therapist)->post(route('mitra.otp.send'), ['purpose' => 'penarikan'])
+            ->assertSessionHasErrors(['code' => 'Nomor tidak terdaftar di WhatsApp.']);
+    }
+
     /** @return array{User, TherapistProfile, Service} */
     private function therapistBersaldo(): array
     {
