@@ -25,6 +25,12 @@ return [
     // Tenggang penyelesaian otomatis setelah durasi layanan berakhir (jam).
     'completion_grace_hours' => env('GOTERAPIS_COMPLETION_GRACE_HOURS', 2),
 
+    // Batas waktu terapis menjawab pesanan sebelum dibatalkan otomatis (jam).
+    'confirmation_window_hours' => env('GOTERAPIS_CONFIRMATION_WINDOW_HOURS', 2),
+
+    // Diamnya terapis sebelum diingatkan bahwa ada pesanan menunggu jawaban (menit).
+    'reminder_unanswered_minutes' => env('GOTERAPIS_REMINDER_UNANSWERED_MINUTES', 30),
+
     // Batas laporan setelah pesanan selesai (jam).
     'report_window_hours' => env('GOTERAPIS_REPORT_WINDOW_HOURS', 24),
 ];

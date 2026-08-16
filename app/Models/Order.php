@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class Order extends Model
@@ -69,6 +70,29 @@ class Order extends Model
         ));
     }
 
+    /**
+     * Batalkan pesanan yang tak kunjung dijawab terapis agar pelanggan bisa mencari terapis lain.
+     * Belum ada dana masuk pada tahap ini, jadi tidak ada yang perlu dikembalikan.
+     *
+     * @return int jumlah pesanan yang dibatalkan
+     */
+    public static function expireUnanswered(): int
+    {
+        $window = (int) config('goterapis.confirmation_window_hours');
+        $orders = static::where('status', 'pending_confirmation')
+            ->where(fn ($q) => $q
+                ->where('created_at', '<=', now()->subHours($window))
+                ->orWhere('scheduled_at', '<=', now()))
+            ->get();
+
+        return $orders->sum(fn (Order $order) => (int) $order->changeStatus(
+            'cancelled',
+            'Pesanan dibatalkan karena terapis tidak menjawab.',
+            ['cancelled_at' => now(), 'cancel_reason' => 'Terapis tidak menjawab sampai batas waktu.'],
+            ['pending_confirmation'],
+        ));
+    }
+
     public static function completeFinished(): int
     {
         $graceHours = (int) config('goterapis.completion_grace_hours');
@@ -81,6 +105,58 @@ class Order extends Model
             ['completed_at' => $order->started_at->copy()->addMinutes($order->duration_min)],
             ['in_progress'],
         ));
+    }
+
+    /**
+     * Pengingat terjadwal: pesanan yang belum dijawab terapis, H-1, dan satu jam sebelum layanan.
+     *
+     * @return int jumlah pesanan yang diingatkan
+     */
+    public static function sendReminders(): int
+    {
+        $unanswered = static::where('status', 'pending_confirmation')
+            ->where('created_at', '<=', now()->subMinutes((int) config('goterapis.reminder_unanswered_minutes')))
+            ->where('scheduled_at', '>', now())
+            ->get()
+            ->sum(fn (Order $order) => (int) $order->remind(
+                'belum-dijawab',
+                'Pesanan belum dijawab. Terima atau tolak agar pelanggan tidak menunggu.',
+                therapistOnly: true,
+            ));
+
+        $dayBefore = static::where('status', 'paid')
+            ->whereBetween('scheduled_at', [now()->addHours(23), now()->addDay()])
+            ->get()
+            ->sum(fn (Order $order) => (int) $order->remind(
+                'h-1',
+                'Pengingat: layanan dijadwalkan besok pukul '.$order->scheduled_at->translatedFormat('H:i').'.',
+            ));
+
+        $hourBefore = static::where('status', 'paid')
+            ->whereBetween('scheduled_at', [now(), now()->addHour()])
+            ->get()
+            ->sum(fn (Order $order) => (int) $order->remind('h-1jam', 'Pengingat: layanan dimulai satu jam lagi.'));
+
+        return $unanswered + $dayBefore + $hourBefore;
+    }
+
+    /**
+     * Kirim satu pengingat, sekali saja per pesanan.
+     * ponytail: penanda kirim disimpan di cache, pindahkan ke kolom bila riwayat pengingat perlu diaudit.
+     */
+    private function remind(string $key, string $message, bool $therapistOnly = false): bool
+    {
+        if (! Cache::add("order-reminder:{$this->id}:{$key}", true, now()->addDays(2))) {
+            return false;
+        }
+
+        $this->loadMissing(['user', 'therapistProfile.user']);
+
+        collect([$therapistOnly ? null : $this->user, $this->therapistProfile?->user])
+            ->filter()->unique('id')
+            ->each->notify(new OrderStatusChanged($this, $message));
+
+        return true;
     }
 
     public function changeStatus(string $status, string $message, array $attributes = [], ?array $from = null): bool
