@@ -205,12 +205,7 @@
                 <span class="truncate text-xs font-medium text-kabut-muda">{{ $order->service->name }} · {{ $order->duration_min }} menit</span>
             </span>
         </div>
-        <div class="flex gap-2.5">
-            <a href="#chat-pesanan" class="flex-1 rounded-[14px] border-[1.5px] border-garis bg-white py-3.5 text-center text-[13px] font-bold text-arang hover:bg-kertas">Chat</a>
-            @if ($t->user->phone)
-                <a href="tel:{{ $t->user->phone }}" class="flex-1 rounded-[14px] border-[1.5px] border-garis bg-white py-3.5 text-center text-[13px] font-bold text-arang hover:bg-kertas">Telepon</a>
-            @endif
-        </div>
+        <a href="#chat-pesanan" class="block rounded-[14px] border-[1.5px] border-garis bg-white py-3.5 text-center text-[13px] font-bold text-arang hover:bg-kertas">Chat</a>
         <x-order-report :$order />
     </div>
 
