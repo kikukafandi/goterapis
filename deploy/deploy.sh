@@ -53,6 +53,13 @@ main() {
     npm run build
 
     sudo chown -R goterapis:www-data /var/www/goterapis
+    # chown di atas mengambil kepemilikan folder yang dibuat PHP-FPM saat runtime
+    # (unggahan, dokumen terapis). Modenya 755/700 dari umask PHP, jadi setelah
+    # pemiliknya jadi goterapis, www-data tinggal punya hak grup — dan kehilangan
+    # akses tulis/baca. Itu yang mematikan unggahan & pratinjau dokumen 17 Agustus
+    # 2026. g+rwX mengembalikannya, g+s membuat folder baru mewarisi grup www-data.
+    sudo chmod -R g+rwX /var/www/goterapis/storage /var/www/goterapis/bootstrap/cache
+    sudo find /var/www/goterapis/storage -type d -exec chmod g+s {} +
     # PHP-FPM jalan sebagai www-data dan harus bisa membaca .env kalau config cache
     # hilang — tanpa ini, satu deploy gagal membuat seluruh situs 500.
     sudo chmod 640 /var/www/goterapis/.env
