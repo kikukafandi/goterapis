@@ -59,7 +59,7 @@ class ArticleController extends Controller
         $data['slug'] = $this->uniqueSlug($data['title'], $article->id);
 
         if ($request->hasFile('cover')) {
-            Storage::disk('public')->delete($article->cover_path ?? '');
+            $article->cover_path && Storage::disk('public')->delete($article->cover_path);
             $data['cover_path'] = $request->file('cover')->store('artikel', 'public');
         }
 
@@ -70,7 +70,7 @@ class ArticleController extends Controller
 
     public function destroy(Article $article): RedirectResponse
     {
-        Storage::disk('public')->delete($article->cover_path ?? '');
+        $article->cover_path && Storage::disk('public')->delete($article->cover_path);
         $article->delete();
 
         return redirect()->route('admin.articles.index')->with('ok', 'Artikel dihapus.');

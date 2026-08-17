@@ -129,4 +129,17 @@ class ProductTest extends TestCase
         $this->assertModelMissing($product);
         Storage::disk('public')->assertMissing('produk/hapus.webp');
     }
+
+    // Dengan disk 'throw' => true, delete('') menunjuk ke root disk dan melempar
+    // UnableToDeleteFile. Produk tanpa gambar harus tetap bisa dihapus.
+    public function test_produk_tanpa_gambar_tetap_bisa_dihapus(): void
+    {
+        Storage::fake('public');
+        $product = Product::factory()->create(['image_path' => null]);
+
+        $this->actingAs($this->admin())->delete(route('admin.products.destroy', $product))
+            ->assertRedirect(route('admin.products.index'));
+
+        $this->assertModelMissing($product);
+    }
 }

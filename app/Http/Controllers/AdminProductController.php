@@ -64,7 +64,7 @@ class AdminProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        Storage::disk('public')->delete($product->image_path ?? '');
+        $product->image_path && Storage::disk('public')->delete($product->image_path);
         $product->delete();
 
         return redirect()->route('admin.products.index')->with('ok', 'Produk dihapus.');

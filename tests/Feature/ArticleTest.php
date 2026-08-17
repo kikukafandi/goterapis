@@ -83,4 +83,25 @@ class ArticleTest extends TestCase
             'slug' => 'judul-diperbarui',
         ]);
     }
+
+    // Dengan disk 'throw' => true, delete('') menunjuk ke root disk dan melempar
+    // UnableToDeleteFile. Artikel tanpa sampul harus tetap bisa disunting & dihapus.
+    public function test_artikel_tanpa_sampul_tetap_bisa_diganti_sampul_dan_dihapus(): void
+    {
+        Storage::fake('public');
+        $article = Article::factory()->draft()->create(['cover_path' => null]);
+
+        $this->actingAs($this->admin())->put("/admin/artikel/{$article->id}", [
+            'title' => 'Artikel Bersampul Baru',
+            'body' => 'Isi.',
+            'cover' => UploadedFile::fake()->image('sampul.jpg'),
+        ])->assertRedirect(route('admin.articles.index'))->assertSessionHasNoErrors();
+
+        Storage::disk('public')->assertExists($article->fresh()->cover_path);
+
+        $polos = Article::factory()->draft()->create(['cover_path' => null]);
+        $this->actingAs($this->admin())->delete("/admin/artikel/{$polos->id}")
+            ->assertRedirect(route('admin.articles.index'));
+        $this->assertModelMissing($polos);
+    }
 }

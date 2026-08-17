@@ -34,7 +34,9 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/private'),
             'serve' => true,
-            'throw' => false,
+            // Kegagalan tulis harus meledak, bukan mengembalikan false diam-diam:
+            // unggahan yang gagal sempat lolos tanpa jejak apa pun di log (17 Agustus 2026).
+            'throw' => true,
             'report' => false,
         ],
 
@@ -43,7 +45,7 @@ return [
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
-            'throw' => false,
+            'throw' => true,
             'report' => false,
         ],
 
