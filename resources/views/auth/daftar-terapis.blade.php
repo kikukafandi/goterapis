@@ -67,7 +67,7 @@
 
         call: {{ old('serves_call') ? 'true' : 'false' }},
         place: {{ old('serves_place') ? 'true' : 'false' }},
-        gender: @js(old('gender')),
+        gender: @js(old('gender', $akun?->gender)),
 
         stepError: '',
 
@@ -211,7 +211,13 @@
     <div class="max-w-2xl">
         <p class="text-xs font-bold uppercase tracking-[.18em] text-daun">Mitra GoTerapis</p>
         <h1 class="mt-3 font-display text-3xl font-bold tracking-tight text-arang sm:text-4xl">Gabung jadi terapis GoTerapis</h1>
-        <p class="mt-3 text-sm leading-7 text-kabut sm:text-base">Atur jadwal sendiri, tentukan harga layananmu, dan cairkan penghasilan kapan saja. Pendaftaran gratis, komisi hanya dipotong dari layanan yang selesai.</p>
+        <p class="mt-3 text-sm leading-7 text-kabut sm:text-base">
+            @if ($akun)
+                Akunmu yang sekarang dipakai langsung — tak perlu bikin akun baru. Atur jadwal sendiri, tentukan harga layananmu, dan cairkan penghasilan kapan saja.
+            @else
+                Atur jadwal sendiri, tentukan harga layananmu, dan cairkan penghasilan kapan saja. Pendaftaran gratis, komisi hanya dipotong dari layanan yang selesai.
+            @endif
+        </p>
     </div>
 
     <div class="mt-8 grid items-start gap-7 lg:grid-cols-[18rem_1fr]">
@@ -356,55 +362,89 @@
                 </p>
 
                 <h2 class="mt-1 font-display text-xl font-bold text-arang">
-                    Buat akun terapis
+                    {{ $akun ? 'Akun yang dipakai' : 'Buat akun terapis' }}
                 </h2>
 
                 <p class="mt-1 text-sm text-kabut">
-                    Data ini digunakan untuk masuk dan menerima informasi pesanan.
+                    {{ $akun
+                        ? 'Kamu tetap memakai akun ini — riwayat pesananmu sebagai pelanggan tidak hilang.'
+                        : 'Data ini digunakan untuk masuk dan menerima informasi pesanan.' }}
                 </p>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-                <x-field
-                    name="name"
-                    label="Nama lengkap"
-                    required
-                    placeholder="Nama sesuai KTP"
-                />
+            @if ($akun)
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="flex items-center gap-3 rounded-2xl border border-garis bg-kertas p-4 sm:col-span-2">
+                        <span class="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-daun-muda text-sm font-bold text-daun">
+                            @if ($akun->avatarUrl())
+                                <img src="{{ $akun->avatarUrl() }}" alt="{{ $akun->name }}" class="h-full w-full object-cover">
+                            @else
+                                {{ Str::upper(Str::substr($akun->name, 0, 2)) }}
+                            @endif
+                        </span>
+                        <span class="flex min-w-0 flex-col gap-0.5">
+                            <span class="truncate text-sm font-bold text-arang">{{ $akun->name }}</span>
+                            <span class="truncate text-xs text-kabut">{{ $akun->email }}</span>
+                        </span>
+                    </div>
 
-                <x-field
-                    name="phone"
-                    label="Nomor telepon"
-                    type="tel"
-                    required
-                    placeholder="08xxxxxxxxxx"
-                />
+                    <x-field
+                        name="phone"
+                        label="Nomor WhatsApp"
+                        type="tel"
+                        required
+                        :value="$akun->phone"
+                        placeholder="08xxxxxxxxxx"
+                        class="sm:col-span-2"
+                    />
 
-                <x-field
-                    name="email"
-                    label="Email"
-                    type="email"
-                    required
-                    placeholder="nama@email.com"
-                    class="sm:col-span-2"
-                />
+                    <p class="-mt-2 text-xs leading-5 text-kabut sm:col-span-2">
+                        Nomor ini dipakai pelanggan untuk menghubungimu. Kalau diganti, kamu perlu verifikasi ulang lewat kode WhatsApp.
+                    </p>
+                </div>
+            @else
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-field
+                        name="name"
+                        label="Nama lengkap"
+                        required
+                        placeholder="Nama sesuai KTP"
+                    />
 
-                <x-field
-                    name="password"
-                    label="Kata sandi"
-                    type="password"
-                    required
-                    placeholder="Minimal 8 karakter"
-                />
+                    <x-field
+                        name="phone"
+                        label="Nomor telepon"
+                        type="tel"
+                        required
+                        placeholder="08xxxxxxxxxx"
+                    />
 
-                <x-field
-                    name="password_confirmation"
-                    label="Ulangi kata sandi"
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                />
-            </div>
+                    <x-field
+                        name="email"
+                        label="Email"
+                        type="email"
+                        required
+                        placeholder="nama@email.com"
+                        class="sm:col-span-2"
+                    />
+
+                    <x-field
+                        name="password"
+                        label="Kata sandi"
+                        type="password"
+                        required
+                        placeholder="Minimal 8 karakter"
+                    />
+
+                    <x-field
+                        name="password_confirmation"
+                        label="Ulangi kata sandi"
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                    />
+                </div>
+            @endif
         </section>
 
         {{-- Tahap 2: Data diri --}}
@@ -435,34 +475,45 @@
                         <span class="text-jahe">*</span>
                     </label>
 
-                    <select
-                        name="gender"
-                        x-model="gender"
-                        required
-                        class="w-full appearance-none rounded-xl border border-garis bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-daun"
-                    >
-                        <option
-                            value=""
-                            disabled
-                            @selected(! old('gender'))
-                        >
-                            Pilih jenis kelamin
-                        </option>
+                    @if ($akun?->gender)
+                        {{-- Ikut jenis kelamin akun: terapis hanya melayani pelanggan sesama jenis. --}}
+                        <p class="rounded-xl border border-garis bg-kertas px-3 py-2.5 text-sm font-semibold text-arang">
+                            {{ ucfirst($akun->gender) }}
+                        </p>
 
-                        <option
-                            value="pria"
-                            @selected(old('gender') === 'pria')
+                        <p class="mt-1.5 text-xs leading-5 text-kabut">
+                            Mengikuti jenis kelamin akunmu. Hubungi dukungan bila perlu diubah.
+                        </p>
+                    @else
+                        <select
+                            name="gender"
+                            x-model="gender"
+                            required
+                            class="w-full appearance-none rounded-xl border border-garis bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-daun"
                         >
-                            Pria
-                        </option>
+                            <option
+                                value=""
+                                disabled
+                                @selected(! old('gender'))
+                            >
+                                Pilih jenis kelamin
+                            </option>
 
-                        <option
-                            value="wanita"
-                            @selected(old('gender') === 'wanita')
-                        >
-                            Wanita
-                        </option>
-                    </select>
+                            <option
+                                value="pria"
+                                @selected(old('gender') === 'pria')
+                            >
+                                Pria
+                            </option>
+
+                            <option
+                                value="wanita"
+                                @selected(old('gender') === 'wanita')
+                            >
+                                Wanita
+                            </option>
+                        </select>
+                    @endif
                 </div>
 
                 <x-field
@@ -903,16 +954,18 @@
             </button>
         </div>
 
-        <p class="mt-5 text-center text-xs text-kabut">
-            Sudah punya akun terapis?
+        @unless ($akun)
+            <p class="mt-5 text-center text-xs text-kabut">
+                Sudah punya akun terapis?
 
-            <a
-                href="{{ route('login') }}"
-                class="font-semibold text-daun hover:underline"
-            >
-                Masuk
-            </a>
-        </p>
+                <a
+                    href="{{ route('login') }}"
+                    class="font-semibold text-daun hover:underline"
+                >
+                    Masuk
+                </a>
+            </p>
+        @endunless
     </form>
     </div>
     </div>

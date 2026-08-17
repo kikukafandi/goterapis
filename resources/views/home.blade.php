@@ -13,16 +13,25 @@
     <section class="grid gap-5 lg:grid-cols-[1.05fr_.95fr] lg:gap-9">
         <div class="relative flex min-h-[340px] flex-col justify-center overflow-hidden rounded-[28px] bg-daun-terang px-6 py-10 sm:px-10 sm:py-11">
             <span class="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-white/10"></span>
-            <p class="relative text-xs font-semibold uppercase tracking-[.04em] text-white/85">Terapis panggilan ke rumah</p>
-            <h1 class="font-display relative mt-5 max-w-xl text-[34px] font-extrabold leading-[1.1] text-white sm:text-[42px]">Badan pegal? Terapis datang ke rumahmu hari ini.</h1>
-            <p class="relative mt-5 max-w-md text-[15px] font-medium leading-relaxed text-white/90">Pilih terapis terverifikasi di kotamu, atur jadwal sendiri, dan bayar setelah pesanan diterima.</p>
+            @if ($heroEyebrow = \App\Models\Setting::get('hero_eyebrow'))
+                <p class="relative text-xs font-semibold uppercase tracking-[.04em] text-white/85">{{ $heroEyebrow }}</p>
+            @endif
+            <h1 class="font-display relative mt-5 max-w-xl text-[34px] font-extrabold leading-[1.1] text-white sm:text-[42px]">{{ \App\Models\Setting::get('hero_title') }}</h1>
+            @if ($heroSubtitle = \App\Models\Setting::get('hero_subtitle'))
+                <p class="relative mt-5 max-w-md text-[15px] font-medium leading-relaxed text-white/90">{{ $heroSubtitle }}</p>
+            @endif
             <div class="relative mt-6 flex flex-wrap gap-3">
-                <a href="{{ route('cari') }}" class="rounded-[14px] bg-white px-6 py-4 text-sm font-bold text-daun hover:text-daun-tua">Cari terapis</a>
-                <a href="{{ route('register.therapist') }}" class="rounded-[14px] border-2 border-white/50 px-6 py-4 text-sm font-bold text-white hover:border-white">Gabung jadi terapis</a>
+                <a href="{{ route('cari') }}" class="rounded-[14px] bg-white px-6 py-4 text-sm font-bold text-daun hover:text-daun-tua">{{ \App\Models\Setting::get('hero_cta_utama') }}</a>
+                {{-- Terapis tak perlu diajak mendaftar lagi — arahkan ke panel mitranya. --}}
+                @if (auth()->user()?->isTherapist())
+                    <a href="{{ route('mitra.dashboard') }}" class="rounded-[14px] border-2 border-white/50 px-6 py-4 text-sm font-bold text-white hover:border-white">{{ \App\Models\Setting::get('hero_cta_panel') }}</a>
+                @else
+                    <a href="{{ route('register.therapist') }}" class="rounded-[14px] border-2 border-white/50 px-6 py-4 text-sm font-bold text-white hover:border-white">{{ \App\Models\Setting::get('hero_cta_mitra') }}</a>
+                @endif
             </div>
         </div>
         <div class="min-h-[280px] overflow-hidden rounded-[28px] lg:min-h-[340px]">
-            <img src="{{ asset('images/hero.webp') }}" alt="Sesi terapi GoTerapis" fetchpriority="high" class="h-full w-full object-cover">
+            <img src="{{ \App\Models\Setting::imageUrl('hero_image', asset('images/hero.webp')) }}" alt="Sesi terapi GoTerapis" fetchpriority="high" class="h-full w-full object-cover">
         </div>
     </section>
 

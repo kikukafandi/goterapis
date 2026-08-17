@@ -177,4 +177,103 @@ class RegisterTest extends TestCase
         $this->assertGuest();
         $this->assertDatabaseMissing('users', ['email' => 'nomodel@example.com']);
     }
+
+    public function test_pelanggan_bisa_membuka_formulir_mitra_tanpa_dilempar_keluar(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'user']))
+            ->get('/daftar-terapis')
+            ->assertOk()
+            ->assertSee('Akun yang dipakai')
+            ->assertDontSee('Ulangi kata sandi');
+    }
+
+    public function test_pelanggan_naik_jadi_terapis_dengan_akun_yang_sama(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        $service = Service::create(['name' => 'Pijat Punggung', 'slug' => 'pijat-punggung', 'category' => 'pijat']);
+        $pelanggan = User::factory()->create([
+            'role' => 'user',
+            'gender' => 'pria',
+            'phone' => '081299998888',
+            'phone_verified_at' => now(),
+        ]);
+
+        $this->actingAs($pelanggan)->post('/daftar-terapis', [
+            // Nama, email, dan sandi sengaja tak dikirim — dipakai dari akun yang sedang masuk.
+            'phone' => '081299998888',
+            'gender' => 'wanita', // diabaikan: akun sudah punya jenis kelamin
+            'experience_years' => 3,
+            'province' => 'Jawa Timur',
+            'city' => 'Lamongan',
+            'serves_call' => '1',
+            'transport_fee' => 10000,
+            'services' => [$service->id],
+            'price' => [$service->id => 90000],
+            'duration' => [$service->id => 60],
+            'ktp' => UploadedFile::fake()->image('ktp.jpg'),
+            'avatar' => UploadedFile::fake()->image('foto.jpg'),
+            'legal_accepted' => '1',
+        ])->assertRedirect(route('phone.verify'))->assertSessionHasNoErrors();
+
+        $pelanggan->refresh();
+        $this->assertSame('therapist', $pelanggan->role);
+        $this->assertSame('pria', $pelanggan->gender);
+        $this->assertSame('pria', $pelanggan->therapistProfile->gender);
+        $this->assertSame('Lamongan', $pelanggan->therapistProfile->city);
+        // Nomor tak berubah, jadi verifikasi lamanya tetap berlaku.
+        $this->assertNotNull($pelanggan->phone_verified_at);
+        $this->assertSame(1, User::count());
+    }
+
+    public function test_ganti_nomor_saat_naik_jadi_mitra_mencabut_verifikasi_lama(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        $service = Service::create(['name' => 'Bekam Kering', 'slug' => 'bekam-kering', 'category' => 'bekam']);
+        $pelanggan = User::factory()->create([
+            'role' => 'user',
+            'gender' => 'wanita',
+            'phone' => '081200001111',
+            'phone_verified_at' => now(),
+        ]);
+
+        $this->actingAs($pelanggan)->post('/daftar-terapis', [
+            'phone' => '081277776666',
+            'experience_years' => 2,
+            'province' => 'Jawa Timur',
+            'city' => 'Surabaya',
+            'serves_place' => '1',
+            'place_address' => 'Jl. Mawar 10',
+            'services' => [$service->id],
+            'price' => [$service->id => 70000],
+            'duration' => [$service->id => 60],
+            'ktp' => UploadedFile::fake()->image('ktp.jpg'),
+            'avatar' => UploadedFile::fake()->image('foto.jpg'),
+            'legal_accepted' => '1',
+        ])->assertSessionHasNoErrors();
+
+        $pelanggan->refresh();
+        $this->assertSame('081277776666', $pelanggan->phone);
+        $this->assertNull($pelanggan->phone_verified_at);
+    }
+
+    public function test_terapis_yang_sudah_terdaftar_diarahkan_ke_panel_mitra(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'therapist']))
+            ->get('/daftar-terapis')
+            ->assertRedirect(route('mitra.dashboard'));
+    }
+
+    public function test_admin_tidak_bisa_mendaftar_jadi_terapis(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get('/daftar-terapis')->assertRedirect(route('home'));
+
+        $admin->refresh();
+        $this->assertSame('admin', $admin->role);
+    }
 }

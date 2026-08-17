@@ -275,6 +275,12 @@ class OrderTest extends TestCase
             'address' => 'Jl. Test',
         ])->assertForbidden();
         $this->assertSame(0, Order::count());
+
+        // Tombolnya juga tak ditawarkan di profil sendiri.
+        $this->actingAs($therapist->user)->get(route('terapis.show', $therapist))
+            ->assertOk()
+            ->assertDontSee('Pesan sekarang')
+            ->assertSee('Ini profilmu sendiri');
     }
 
     public function test_admin_tidak_bisa_memesan(): void

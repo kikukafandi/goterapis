@@ -69,6 +69,11 @@ class TherapistProfile extends Model
      */
     public function isBookableBy(?User $user): bool
     {
+        // Terapis tak bisa memesan dirinya sendiri — sekalian menyembunyikan tombolnya di profil.
+        if ($user?->id === $this->user_id) {
+            return false;
+        }
+
         return $user?->gender === null || $user->gender === $this->gender;
     }
 

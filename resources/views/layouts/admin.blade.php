@@ -19,17 +19,28 @@
     $antreanPenarikan = \App\Models\Withdrawal::where('status', 'requested')->count();
     $antreanLaporan = \App\Models\Report::whereIn('status', ['open', 'reviewing'])->count();
 
-    $menu = [
-        ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard')],
-        ['label' => 'Terapis', 'href' => route('admin.therapists'), 'active' => request()->routeIs('admin.therapist*'), 'count' => $antreanDokumen],
-        ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'active' => request()->routeIs('admin.withdrawals.*'), 'count' => $antreanPenarikan],
-        ['label' => 'Transaksi', 'href' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*')],
-        ['label' => 'Laporan', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'count' => $antreanLaporan],
-        ['label' => 'Kategori', 'href' => route('admin.categories.index'), 'active' => request()->routeIs('admin.categories.*')],
-        ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*')],
-        ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*')],
-        ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*')],
-        ['label' => 'WhatsApp Gateway', 'href' => route('admin.whatsapp'), 'active' => request()->routeIs('admin.whatsapp')],
+    $beranda = ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard'), 'icon' => 'home'];
+
+    // Menu dikelompokkan supaya sidebar tetap pendek; tiap klaster bisa dibuka-tutup.
+    $klaster = [
+        ['label' => 'Mitra', 'items' => [
+            ['label' => 'Terapis', 'href' => route('admin.therapists'), 'active' => request()->routeIs('admin.therapist*'), 'icon' => 'user', 'count' => $antreanDokumen],
+            ['label' => 'Laporan', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'icon' => 'shield', 'count' => $antreanLaporan],
+        ]],
+        ['label' => 'Keuangan', 'items' => [
+            ['label' => 'Transaksi', 'href' => route('admin.transactions.index'), 'active' => request()->routeIs('admin.transactions.*'), 'icon' => 'card'],
+            ['label' => 'Penarikan', 'href' => route('admin.withdrawals.index'), 'active' => request()->routeIs('admin.withdrawals.*'), 'icon' => 'wallet', 'count' => $antreanPenarikan],
+        ]],
+        ['label' => 'Konten', 'items' => [
+            ['label' => 'Kategori', 'href' => route('admin.categories.index'), 'active' => request()->routeIs('admin.categories.*'), 'icon' => 'tag'],
+            ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*'), 'icon' => 'document'],
+            ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*'), 'icon' => 'box'],
+            ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*'), 'icon' => 'image'],
+        ]],
+        ['label' => 'Sistem', 'items' => [
+            ['label' => 'Setelan situs', 'href' => route('admin.settings.index'), 'active' => request()->routeIs('admin.settings.*'), 'icon' => 'gear'],
+            ['label' => 'WhatsApp Gateway', 'href' => route('admin.whatsapp'), 'active' => request()->routeIs('admin.whatsapp'), 'icon' => 'chat'],
+        ]],
     ];
 @endphp
 
@@ -51,18 +62,46 @@
         </button>
     </div>
 
-    <nav class="flex flex-col gap-0.5">
-        @foreach ($menu as $m)
-            <a href="{{ $m['href'] }}"
-               class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold {{ $m['active'] ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5' }}">
-                <span class="h-[7px] w-[7px] shrink-0 rounded-full {{ $m['active'] ? 'bg-daun-neon' : 'bg-white/20' }}"></span>
-                <span class="flex-1">{{ $m['label'] }}</span>
-                @if (($m['count'] ?? 0) > 0)
-                    <span class="min-w-5 rounded-full bg-jahe-terang px-1.5 text-center text-[10px] font-bold leading-5 text-white">{{ $m['count'] }}</span>
-                @endif
-            </a>
+    <nav class="flex flex-col gap-1">
+        @include('partials.admin-menu-item', ['m' => $beranda])
+
+        @foreach ($klaster as $grup)
+            @php
+                $grupAktif = collect($grup['items'])->contains('active', true);
+                $antrean = collect($grup['items'])->sum(fn ($m) => $m['count'] ?? 0);
+            @endphp
+
+            {{-- <details> menangani buka-tutup tanpa JS; skrip di bawah hanya mengingat pilihannya. --}}
+            <details class="group" data-klaster="{{ Str::slug($grup['label']) }}" open @if ($grupAktif) data-aktif @endif>
+                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40 hover:text-white/70 [&::-webkit-details-marker]:hidden">
+                    <span class="flex-1">{{ $grup['label'] }}</span>
+                    @if ($antrean > 0)
+                        <span class="min-w-5 rounded-full bg-jahe-terang px-1.5 text-center text-[10px] font-bold leading-5 text-white group-open:hidden">{{ $antrean }}</span>
+                    @endif
+                    <x-icon name="chevron-down" class="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+
+                <div class="mt-0.5 flex flex-col gap-0.5">
+                    @foreach ($grup['items'] as $m)
+                        @include('partials.admin-menu-item', ['m' => $m])
+                    @endforeach
+                </div>
+            </details>
         @endforeach
     </nav>
+
+    <script>
+        // Klaster yang ditutup admin tetap tertutup di halaman berikutnya — kecuali berisi menu aktif.
+        document.querySelectorAll('details[data-klaster]').forEach(klaster => {
+            const kunci = 'admin-klaster:' + klaster.dataset.klaster;
+
+            if (klaster.dataset.aktif === undefined && localStorage.getItem(kunci) === 'tutup') {
+                klaster.open = false;
+            }
+
+            klaster.addEventListener('toggle', () => localStorage.setItem(kunci, klaster.open ? 'buka' : 'tutup'));
+        });
+    </script>
 
     <div class="mt-auto flex items-center gap-3 rounded-2xl bg-white/5 p-3">
         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-bold text-daun-neon">

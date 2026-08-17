@@ -7,11 +7,11 @@
     <link rel="icon" type="image/png" href="{{ asset('images/brand/logo-mark.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/brand/logo-mark.png') }}">
     @php
-        $seoTitle = trim($__env->yieldContent('title', 'Temukan Terapis di Sekitarmu'));
+        $seoTitle = trim($__env->yieldContent('title', \App\Models\Setting::get('seo_title')));
         $seoTitle = $seoTitle === 'GoTerapis' || str_contains($seoTitle, 'GoTerapis') ? $seoTitle : $seoTitle.' — GoTerapis';
-        $seoDescription = trim($__env->yieldContent('meta', 'Platform komunitas dan pemesanan terapis pijat, bekam, kretek, dan terapi tubuh terpercaya di sekitarmu.'));
+        $seoDescription = trim($__env->yieldContent('meta', \App\Models\Setting::get('seo_description')));
         $seoCanonical = trim($__env->yieldContent('canonical', url()->current()));
-        $seoImage = trim($__env->yieldContent('image', asset('images/brand/logo-mark.png')));
+        $seoImage = trim($__env->yieldContent('image', \App\Models\Setting::imageUrl('seo_image', asset('images/brand/logo-mark.png'))));
         $seoRobots = trim($__env->yieldContent('robots', request()->routeIs('cari', 'akun', 'tutorial', 'notifications.*', 'pesan.*', 'pesanan.*', 'chat', 'mitra.*') || request()->query() ? 'noindex, nofollow' : 'index, follow'));
         $seoType = trim($__env->yieldContent('type', 'website'));
     @endphp

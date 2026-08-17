@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminPromotionBannerController;
 use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\AdminTherapistDocumentController;
 use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\AdminWhatsAppController;
@@ -100,9 +101,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/daftar', [RegisterController::class, 'show'])->name('register');
     Route::post('/daftar', [RegisterController::class, 'register'])->middleware('throttle:auth');
 
-    Route::get('/daftar-terapis', [TherapistRegisterController::class, 'show'])->name('register.therapist');
-    Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register'])->middleware('throttle:auth');
-
     Route::get('/auth/google', [GoogleController::class, 'redirect'])->middleware('throttle:auth')->name('google.redirect');
     Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->middleware('throttle:auth')->name('google.callback');
 
@@ -112,6 +110,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/atur-ulang-sandi', [PasswordResetController::class, 'update'])->middleware('throttle:auth')->name('password.update');
 });
 Route::post('/keluar', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Pendaftaran mitra terbuka untuk tamu maupun pelanggan yang ingin naik jadi terapis
+// dengan akun yang sama — jadi tak boleh masuk grup `guest`.
+Route::get('/daftar-terapis', [TherapistRegisterController::class, 'show'])->name('register.therapist');
+Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register'])->middleware('throttle:auth');
 
 // Pemesanan (butuh login; guest diarahkan ke /masuk oleh middleware auth)
 Route::middleware('auth')->group(function () {
@@ -170,6 +173,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/transaksi', [AdminTransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaksi/{payment}', [AdminTransactionController::class, 'show'])->name('transactions.show');
     Route::post('/transaksi/{payment}/refund', [AdminTransactionController::class, 'retryRefund'])->name('transactions.retry-refund');
+    Route::get('/setelan', [AdminSettingController::class, 'index'])->name('settings.index');
+    Route::put('/setelan', [AdminSettingController::class, 'update'])->name('settings.update');
     Route::get('/kategori', [AdminCategoryController::class, 'index'])->name('categories.index');
     Route::post('/kategori', [AdminCategoryController::class, 'store'])->name('categories.store');
     Route::post('/kategori/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
