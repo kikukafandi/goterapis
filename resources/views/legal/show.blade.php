@@ -23,7 +23,7 @@
         @foreach ($document['sections'] as [$heading, $body])
             <section>
                 <h2 class="font-display text-xl font-semibold text-arang">{{ $heading }}</h2>
-                <p class="mt-2 leading-7 text-arang/80">{{ $body }}</p>
+                <p class="mt-2 whitespace-pre-line leading-7 text-arang/80">{{ $body }}</p>
             </section>
         @endforeach
     </div>
