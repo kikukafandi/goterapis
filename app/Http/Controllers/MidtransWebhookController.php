@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\RefundLatePayment;
 use App\Models\Order;
+use App\Models\ShopOrder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +32,13 @@ class MidtransWebhookController extends Controller
         $transaction = (string) $request->input('transaction_status');
         $fraud = (string) $request->input('fraud_status');
         $paid = $transaction === 'settlement'
-            || ($transaction === 'capture' && $fraud !== 'challenge');
+            || ($transaction === 'capture' && $fraud === 'accept');
         $failed = in_array($transaction, ['deny', 'expire', 'cancel'], true);
 
         $latePayment = DB::transaction(function () use ($request, $orderId, $grossAmount, $transaction, $paid, $failed) {
-            $order = Order::where('code', $orderId)->lockForUpdate()->first();
+            $order = str_starts_with($orderId, 'GT-SHOP-')
+                ? ShopOrder::where('code', $orderId)->lockForUpdate()->first()
+                : Order::where('code', $orderId)->lockForUpdate()->first();
             if ($order === null) {
                 return 'not_found';
             }
@@ -43,11 +46,11 @@ class MidtransWebhookController extends Controller
                 return 'invalid_amount';
             }
 
-            $payment = $order->payment()->firstOrNew([]);
-            $status = $payment->status;
-            if (! in_array($status, ['paid', 'refunded'], true)) {
-                $status = $paid ? 'paid' : ($transaction === 'expire' ? 'expired' : ($failed ? 'failed' : 'pending'));
+            $payment = $order->payment()->lockForUpdate()->first();
+            if ($payment === null || $payment->gateway !== 'midtrans' || $payment->status === 'refunded') {
+                return 'payment_not_found';
             }
+            $status = $payment->status === 'paid' ? 'paid' : ($paid ? 'paid' : ($transaction === 'expire' ? 'expired' : ($failed ? 'failed' : 'pending')));
             $payment->fill([
                 'gateway' => 'midtrans',
                 'gateway_ref' => (string) ($request->input('transaction_id') ?: $orderId),
@@ -58,8 +61,14 @@ class MidtransWebhookController extends Controller
                 'raw' => $request->only(['transaction_status', 'fraud_status', 'status_code', 'payment_type', 'transaction_time']),
             ])->save();
 
-            if ($paid) {
+            if ($paid && $order instanceof ShopOrder) {
+                ShopOrder::whereKey($order)->where('status', 'pending_payment')->update(['status' => 'paid', 'paid_at' => $order->paid_at ?? now(), 'updated_at' => now()]);
+            } elseif ($paid) {
                 $order->changeStatus('paid', 'Pembayaran pesanan berhasil.', from: ['pending_payment']);
+            }
+
+            if ($order instanceof ShopOrder) {
+                return null;
             }
 
             if ($paid && $order->status === 'cancelled'
@@ -82,6 +91,9 @@ class MidtransWebhookController extends Controller
         }
         if ($latePayment === 'invalid_amount') {
             return response('Invalid gross amount', 422);
+        }
+        if ($latePayment === 'payment_not_found') {
+            return response('Payment intent not found', 404);
         }
         if (is_int($latePayment)) {
             RefundLatePayment::dispatch($latePayment, (int) $grossAmount)->afterCommit();

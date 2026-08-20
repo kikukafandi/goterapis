@@ -18,6 +18,8 @@
             ['label' => 'Pesanan saya', 'href' => route('pesanan.index')],
             ['label' => 'Percakapan', 'href' => route('chat')],
             ['label' => 'Toko', 'href' => route('products.index')],
+            ['label' => 'Keranjang', 'href' => route('shop.cart')],
+            ['label' => 'Pesanan toko', 'href' => route('shop.orders.index')],
             ['label' => 'Jurnal kesehatan', 'href' => route('artikel.index')],
         ];
 

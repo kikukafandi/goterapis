@@ -36,7 +36,7 @@ class MidtransWebhookTest extends TestCase
         ]);
         $service = Service::create(['name' => 'Pijat', 'slug' => 'pijat-'.uniqid(), 'category' => 'pijat']);
 
-        return Order::create([
+        $order = Order::create([
             'code' => 'GT-'.strtoupper(uniqid()),
             'user_id' => $user->id, 'therapist_profile_id' => $profile->id, 'service_id' => $service->id,
             'model' => 'panggilan', 'scheduled_at' => now()->addDay(), 'duration_min' => 60,
@@ -44,6 +44,9 @@ class MidtransWebhookTest extends TestCase
             'total' => 118_000, 'commission' => 15_000, 'payout' => 100_000,
             'status' => 'pending_payment',
         ]);
+        $order->payment()->create(['gateway' => 'midtrans', 'gateway_ref' => $order->code, 'amount' => $order->total, 'status' => 'pending']);
+
+        return $order;
     }
 
     private function payload(Order $order, string $transaction, string $statusCode = '200'): array
@@ -84,7 +87,7 @@ class MidtransWebhookTest extends TestCase
         $this->postJson(route('midtrans.webhook'), $payload)->assertStatus(422);
 
         $this->assertSame('pending_payment', $order->fresh()->status);
-        $this->assertNull($order->payment);
+        $this->assertSame('pending', $order->payment->fresh()->status);
     }
 
     public function test_signature_salah_ditolak(): void
@@ -105,7 +108,7 @@ class MidtransWebhookTest extends TestCase
         $this->postJson(route('midtrans.webhook'), $this->payload($order, 'settlement'))->assertStatus(503);
 
         $this->assertSame('pending_payment', $order->fresh()->status);
-        $this->assertNull($order->payment);
+        $this->assertSame('pending', $order->payment->fresh()->status);
     }
 
     public function test_notifikasi_expire_tidak_meluluskan(): void
@@ -156,7 +159,7 @@ class MidtransWebhookTest extends TestCase
             ->push(['status_code' => '200']);
         $order = $this->pendingOrder();
         $order->update(['status' => 'cancelled']);
-        $order->payment()->create([
+        $order->payment()->update([
             'gateway' => 'midtrans',
             'gateway_ref' => $order->code,
             'amount' => 118_000,
@@ -185,7 +188,7 @@ class MidtransWebhookTest extends TestCase
     {
         Http::fake();
         $order = $this->pendingOrder();
-        $order->payment()->create([
+        $order->payment()->update([
             'gateway' => 'midtrans',
             'gateway_ref' => $order->code,
             'amount' => 118_000,

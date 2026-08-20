@@ -35,6 +35,7 @@
             ['label' => 'Kategori', 'href' => route('admin.categories.index'), 'active' => request()->routeIs('admin.categories.*'), 'icon' => 'tag'],
             ['label' => 'Artikel', 'href' => route('admin.articles.index'), 'active' => request()->routeIs('admin.articles.*'), 'icon' => 'document'],
             ['label' => 'Produk', 'href' => route('admin.products.index'), 'active' => request()->routeIs('admin.products.*'), 'icon' => 'box'],
+            ['label' => 'Pesanan toko', 'href' => route('admin.shop-orders.index'), 'active' => request()->routeIs('admin.shop-orders.*'), 'icon' => 'box'],
             ['label' => 'Banner promosi', 'href' => route('admin.banners.index'), 'active' => request()->routeIs('admin.banners.*'), 'icon' => 'image'],
         ]],
         ['label' => 'Sistem', 'items' => [

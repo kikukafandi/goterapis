@@ -33,7 +33,9 @@
                 @if ($product->weight_grams)<div class="flex justify-between gap-4"><dt class="text-[13px] font-medium text-kabut-muda">Berat</dt><dd class="text-right text-[13px] font-semibold text-arang">{{ number_format($product->weight_grams, 0, ',', '.') }} gram</dd></div>@endif
             </dl>
 
-            <div class="mt-5 rounded-[18px] bg-kunyit-muda p-4 text-[12px] font-medium leading-relaxed text-kunyit-tua">Pembelian daring belum tersedia. Halaman ini menampilkan informasi produk dan stok yang dikelola GoTerapis.</div>
+            @if ($product->stock > 0)
+                <form method="post" action="{{ route('shop.cart.store', $product) }}" class="mt-5 flex gap-3">@csrf<input type="number" name="quantity" value="1" min="1" max="{{ min(99, $product->stock) }}" aria-label="Jumlah" class="w-20 rounded-xl border border-garis bg-kertas-isian px-3 text-sm"><button class="flex-1 rounded-full bg-daun px-5 py-3 text-sm font-bold text-white">Tambah ke keranjang</button></form>
+            @endif
         </section>
     </div>
 

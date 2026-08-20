@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('title', 'Pesanan Toko')
+@section('content')
+@php($labels = ['waiting_shipping'=>'Menunggu ongkos kirim','pending_payment'=>'Menunggu pembayaran','paid'=>'Sudah dibayar','processing'=>'Sedang diproses','shipped'=>'Dalam pengiriman','completed'=>'Selesai','cancelled'=>'Dibatalkan'])
+<div class="mx-auto max-w-3xl px-4 pb-28 pt-6"><h1 class="font-display text-2xl font-extrabold text-arang">Pesanan toko</h1><div class="mt-5 space-y-3">@forelse($orders as $order)<a href="{{ route('shop.orders.show', $order) }}" class="block rounded-card border border-garis bg-white p-5"><div class="flex justify-between gap-3"><div><p class="font-bold text-arang">{{ $order->code }}</p><p class="mt-1 text-xs text-kabut">{{ $order->created_at->translatedFormat('d M Y H:i') }}</p></div><span class="h-fit rounded-full bg-daun-muda px-3 py-1 text-xs font-bold text-daun-tua">{{ $labels[$order->status] }}</span></div><p class="mt-4 font-display text-lg font-bold text-arang">{{ $order->total === null ? 'Ongkir belum ditetapkan' : 'Rp'.number_format($order->total, 0, ',', '.') }}</p></a>@empty<div class="rounded-card border border-garis bg-white p-10 text-center text-sm text-kabut">Belum ada pesanan toko.</div>@endforelse</div><div class="mt-4">{{ $orders->links() }}</div></div>
+@endsection

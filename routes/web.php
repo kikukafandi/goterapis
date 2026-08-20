@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminPromotionBannerController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSettingController;
+use App\Http\Controllers\AdminShopOrderController;
 use App\Http\Controllers\AdminTherapistDocumentController;
 use App\Http\Controllers\AdminTransactionController;
 use App\Http\Controllers\AdminWhatsAppController;
@@ -31,6 +32,8 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ShopCartController;
+use App\Http\Controllers\ShopOrderController;
 use App\Http\Controllers\TherapistBalanceController;
 use App\Http\Controllers\TherapistDashboardController;
 use App\Http\Controllers\TherapistLocationController;
@@ -143,6 +146,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('/pesanan/{order}/selesai', [OrderController::class, 'complete'])->name('pesanan.complete');
     Route::patch('/pesanan/{order}/batal', [OrderController::class, 'cancel'])->name('pesanan.cancel');
     Route::post('/pesanan/{order}/ulasan', [ReviewController::class, 'store'])->name('pesanan.review');
+    Route::get('/keranjang', [ShopCartController::class, 'index'])->name('shop.cart');
+    Route::post('/keranjang/{product}', [ShopCartController::class, 'store'])->name('shop.cart.store');
+    Route::patch('/keranjang/item/{item}', [ShopCartController::class, 'update'])->name('shop.cart.update');
+    Route::delete('/keranjang/item/{item}', [ShopCartController::class, 'destroy'])->name('shop.cart.destroy');
+    Route::get('/toko/checkout', [ShopOrderController::class, 'create'])->name('shop.checkout');
+    Route::post('/toko/checkout', [ShopOrderController::class, 'store'])->name('shop.orders.store');
+    Route::get('/toko/pesanan', [ShopOrderController::class, 'index'])->name('shop.orders.index');
+    Route::get('/toko/pesanan/{shopOrder}', [ShopOrderController::class, 'show'])->name('shop.orders.show');
+    Route::post('/toko/pesanan/{shopOrder}/bayar', [ShopOrderController::class, 'pay'])->name('shop.orders.pay');
 });
 
 // Panel terapis (mitra) — kelola pesanan masuk
@@ -173,6 +185,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/transaksi', [AdminTransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaksi/{payment}', [AdminTransactionController::class, 'show'])->name('transactions.show');
     Route::post('/transaksi/{payment}/refund', [AdminTransactionController::class, 'retryRefund'])->name('transactions.retry-refund');
+    Route::get('/pesanan-toko', [AdminShopOrderController::class, 'index'])->name('shop-orders.index');
+    Route::get('/pesanan-toko/{shopOrder}', [AdminShopOrderController::class, 'show'])->name('shop-orders.show');
+    Route::patch('/pesanan-toko/{shopOrder}/ongkir', [AdminShopOrderController::class, 'shipping'])->name('shop-orders.shipping');
+    Route::patch('/pesanan-toko/{shopOrder}/proses', [AdminShopOrderController::class, 'process'])->name('shop-orders.process');
+    Route::patch('/pesanan-toko/{shopOrder}/kirim', [AdminShopOrderController::class, 'ship'])->name('shop-orders.ship');
     Route::get('/setelan', [AdminSettingController::class, 'index'])->name('settings.index');
     Route::put('/setelan', [AdminSettingController::class, 'update'])->name('settings.update');
     Route::get('/kategori', [AdminCategoryController::class, 'index'])->name('categories.index');

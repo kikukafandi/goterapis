@@ -4,6 +4,7 @@ namespace App\Support\Payment;
 
 use App\Contracts\PaymentGateway;
 use App\Models\Order;
+use App\Models\ShopOrder;
 use Illuminate\Support\Facades\Http;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -22,10 +23,11 @@ class MidtransGateway implements PaymentGateway
         Config::$is3ds = true;
     }
 
-    public function pay(Order $order): ?string
+    public function pay(Order|ShopOrder $order): ?string
     {
+        $foreignKey = $order instanceof ShopOrder ? 'shop_order_id' : 'order_id';
         $order->payment()->updateOrCreate(
-            ['order_id' => $order->id],
+            [$foreignKey => $order->id],
             ['gateway' => 'midtrans', 'gateway_ref' => $order->code, 'amount' => $order->total, 'status' => 'pending'],
         );
 
@@ -39,7 +41,7 @@ class MidtransGateway implements PaymentGateway
                 'email' => $order->user->email,
             ],
             'callbacks' => [
-                'finish' => route('pesanan.show', $order),
+                'finish' => $order instanceof ShopOrder ? route('shop.orders.show', $order) : route('pesanan.show', $order),
             ],
         ]);
 

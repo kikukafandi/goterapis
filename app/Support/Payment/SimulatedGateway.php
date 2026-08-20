@@ -4,6 +4,7 @@ namespace App\Support\Payment;
 
 use App\Contracts\PaymentGateway;
 use App\Models\Order;
+use App\Models\ShopOrder;
 
 /**
  * Gateway simulasi: langsung menandai lunas tanpa jaringan.
@@ -11,9 +12,9 @@ use App\Models\Order;
  */
 class SimulatedGateway implements PaymentGateway
 {
-    public function pay(Order $order): ?string
+    public function pay(Order|ShopOrder $order): ?string
     {
-        $order->payment()->create([
+        $order->payment()->firstOrCreate([], [
             'gateway' => 'simulasi',
             'gateway_ref' => $order->code,
             'method' => 'simulasi',
