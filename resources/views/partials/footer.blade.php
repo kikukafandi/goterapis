@@ -11,10 +11,9 @@
         <div>
             <h2 class="text-xs font-bold tracking-[.04em]">Layanan</h2>
             <ul class="mt-3.5 space-y-3 text-[13px] font-medium text-white/50">
-                <li><a href="{{ route('cari', ['kategori' => 'pijat']) }}" class="hover:text-white">Pijat tradisional</a></li>
-                <li><a href="{{ route('cari', ['kategori' => 'pijat']) }}" class="hover:text-white">Spot & Spa Massage</a></li>
-                <li><a href="{{ route('cari', ['kategori' => 'bekam']) }}" class="hover:text-white">Bekam</a></li>
-                <li><a href="{{ route('cari', ['kategori' => 'kretek']) }}" class="hover:text-white">Terapi olahraga</a></li>
+                @foreach ($footerCategories as $slug => $name)
+                    <li><a href="{{ route('cari', ['kategori' => $slug]) }}" class="hover:text-white">{{ $name }}</a></li>
+                @endforeach
             </ul>
         </div>
 

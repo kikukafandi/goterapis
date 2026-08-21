@@ -67,6 +67,24 @@ class AdminCategoryTest extends TestCase
             ->assertSee('Lainnya');
     }
 
+    public function test_footer_menampilkan_lima_kategori_pertama_sesuai_urutan_admin(): void
+    {
+        Category::query()->delete();
+
+        foreach (range(1, 6) as $position) {
+            Category::create(['name' => "Kategori {$position}", 'slug' => "kategori-{$position}", 'position' => $position]);
+        }
+
+        $footer = view('partials.footer')->render();
+
+        $positions = array_map(fn ($position) => strpos($footer, "Kategori {$position}"), range(1, 5));
+
+        $this->assertSame($positions, collect($positions)->sort()->values()->all());
+        $this->assertNotContains(false, $positions);
+        $this->assertStringNotContainsString('Kategori 6', $footer);
+        $this->assertStringContainsString(route('cari', ['kategori' => 'kategori-1']), $footer);
+    }
+
     public function test_nama_kategori_tidak_boleh_kembar(): void
     {
         $this->actingAs($this->admin())->post(route('admin.categories.store'), ['name' => 'Pijat'])

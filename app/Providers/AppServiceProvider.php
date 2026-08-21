@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentGateway;
+use App\Models\Category;
 use App\Support\Payment\MidtransGateway;
 use App\Support\Payment\SimulatedGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('partials.footer', fn ($view) => $view->with(
+            'footerCategories',
+            Category::terurut()->limit(5)->pluck('name', 'slug'),
+        ));
+
         if ($this->app->environment('production')) {
             foreach (['operator_name', 'operator_address', 'operator_email', 'version', 'effective_date'] as $key) {
                 $value = (string) config("legal.{$key}");
