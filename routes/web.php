@@ -42,7 +42,6 @@ use App\Http\Controllers\TherapistProfileController;
 use App\Http\Controllers\TutorialController;
 use App\Models\Article;
 use App\Models\Category;
-use App\Models\Service;
 use App\Models\TherapistProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -57,9 +56,7 @@ Route::get('/', function () {
         ->orderByDesc('rating_avg')
         ->limit(6)
         ->get();
-    // Hanya kategori yang benar-benar punya layanan aktif yang tampil di beranda.
     $categories = Category::terurut()
-        ->whereIn('slug', Service::where('is_active', true)->distinct()->pluck('category'))
         ->limit(11)
         ->get();
     $hasMoreCategories = $categories->count() > 10;

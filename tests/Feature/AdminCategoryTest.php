@@ -41,11 +41,12 @@ class AdminCategoryTest extends TestCase
         $this->actingAs($this->admin())->post(route('admin.categories.store'), ['name' => 'Totok Wajah'])
             ->assertSessionHasNoErrors();
 
+        $this->get(route('home'))->assertOk()->assertSee('Totok Wajah');
+
         // Kolom services.category dulu berupa enum; kategori baru mustahil dipakai tanpa migrasi.
         Service::create(['name' => 'Totok Aura', 'slug' => 'totok-aura', 'category' => 'totok-wajah', 'is_active' => true]);
 
         $this->get(route('cari', ['kategori' => 'totok-wajah']))->assertOk()->assertSee('Totok Wajah');
-        $this->get(route('home'))->assertOk()->assertSee('Totok Wajah');
     }
 
     public function test_beranda_membatasi_kategori_dan_menampilkan_lainnya(): void
