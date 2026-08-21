@@ -35,6 +35,13 @@ class TherapistSearchTest extends TestCase
         }
     }
 
+    public function test_search_bar_navbar_disembunyikan_di_halaman_cari(): void
+    {
+        $response = $this->get(route('cari'))->assertOk();
+
+        $this->assertSame(1, substr_count($response->getContent(), 'placeholder="Layanan atau nama terapis"'));
+    }
+
     private function therapist(string $name, string $gender, string $city, float $lat, float $lng): TherapistProfile
     {
         $user = User::factory()->create(['name' => $name, 'role' => 'therapist']);

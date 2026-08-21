@@ -22,13 +22,15 @@
                 @endforeach
             </nav>
         @else
-            <form action="{{ route('cari') }}" method="get" class="hidden min-w-[200px] max-w-[340px] flex-1 items-center rounded-[14px] border border-garis bg-kertas-app py-1 pl-3.5 pr-1 lg:flex">
-                <x-icon name="search" class="h-[17px] w-[17px] shrink-0 text-kabut-samar" />
-                <input name="q" value="{{ request('q') }}" placeholder="Layanan atau nama terapis" class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[13px] font-medium text-arang outline-none placeholder:text-kabut-samar">
-                <label class="flex shrink-0 items-center gap-1.5 rounded-[10px] bg-white px-3 py-2.5">
-                    <select name="kota" onchange="this.form.submit()" aria-label="Pilih kota" class="max-w-28 appearance-none bg-transparent text-xs font-semibold text-arang outline-none"><option value="">Semua kota</option>@foreach ($navigationCities as $city)<option value="{{ $city }}" @selected($selectedCity === $city)>{{ $city }}</option>@endforeach</select>
-                </label>
-            </form>
+            @unless (request()->routeIs('cari'))
+                <form action="{{ route('cari') }}" method="get" class="hidden min-w-[200px] max-w-[340px] flex-1 items-center rounded-[14px] border border-garis bg-kertas-app py-1 pl-3.5 pr-1 lg:flex">
+                    <x-icon name="search" class="h-[17px] w-[17px] shrink-0 text-kabut-samar" />
+                    <input name="q" value="{{ request('q') }}" placeholder="Layanan atau nama terapis" class="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-[13px] font-medium text-arang outline-none placeholder:text-kabut-samar">
+                    <label class="flex shrink-0 items-center gap-1.5 rounded-[10px] bg-white px-3 py-2.5">
+                        <select name="kota" onchange="this.form.submit()" aria-label="Pilih kota" class="max-w-28 appearance-none bg-transparent text-xs font-semibold text-arang outline-none"><option value="">Semua kota</option>@foreach ($navigationCities as $city)<option value="{{ $city }}" @selected($selectedCity === $city)>{{ $city }}</option>@endforeach</select>
+                    </label>
+                </form>
+            @endunless
             <nav class="hidden shrink-0 items-center gap-5 lg:flex">
                 <a href="{{ route('cari') }}" class="text-[13px] font-semibold {{ request()->routeIs('cari', 'terapis.show') ? 'text-daun' : 'text-arang' }}">Cari terapis</a>
                 <a href="{{ route('artikel.index') }}" class="text-[13px] font-semibold {{ request()->routeIs('artikel.*') ? 'text-daun' : 'text-arang' }}">Jurnal</a>

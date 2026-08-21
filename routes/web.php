@@ -60,7 +60,10 @@ Route::get('/', function () {
     // Hanya kategori yang benar-benar punya layanan aktif yang tampil di beranda.
     $categories = Category::terurut()
         ->whereIn('slug', Service::where('is_active', true)->distinct()->pluck('category'))
+        ->limit(11)
         ->get();
+    $hasMoreCategories = $categories->count() > 10;
+    $categories = $categories->take($hasMoreCategories ? 9 : 10);
     $cities = TherapistProfile::query()
         ->whereNotNull('city')
         ->where('city', '!=', '')
@@ -74,7 +77,7 @@ Route::get('/', function () {
         ->limit(3)
         ->get();
 
-    return view('home', compact('therapists', 'categories', 'cities', 'articles'));
+    return view('home', compact('therapists', 'categories', 'hasMoreCategories', 'cities', 'articles'));
 })->name('home');
 Route::get('/sitemap.xml', [LocalSeoController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [LocalSeoController::class, 'robots'])->name('robots');

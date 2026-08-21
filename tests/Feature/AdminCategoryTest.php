@@ -48,6 +48,24 @@ class AdminCategoryTest extends TestCase
         $this->get(route('home'))->assertOk()->assertSee('Totok Wajah');
     }
 
+    public function test_beranda_membatasi_kategori_dan_menampilkan_lainnya(): void
+    {
+        Category::query()->delete();
+
+        foreach (range(1, 11) as $position) {
+            $slug = "kategori-{$position}";
+            Category::create(['name' => "Kategori {$position}", 'slug' => $slug, 'position' => $position]);
+            Service::create(['name' => "Layanan {$position}", 'slug' => "layanan-{$position}", 'category' => $slug, 'is_active' => true]);
+        }
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('Kategori 9')
+            ->assertDontSee('Kategori 10')
+            ->assertDontSee('Kategori 11')
+            ->assertSee('Lainnya');
+    }
+
     public function test_nama_kategori_tidak_boleh_kembar(): void
     {
         $this->actingAs($this->admin())->post(route('admin.categories.store'), ['name' => 'Pijat'])

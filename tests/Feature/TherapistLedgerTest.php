@@ -16,6 +16,7 @@ class TherapistLedgerTest extends TestCase
     public function test_completion_credits_payout_once_and_releases_it_after_24_hours(): void
     {
         $completedAt = now()->startOfSecond();
+        $this->travelTo($completedAt);
         [$customer, $order] = $this->order();
 
         $this->actingAs($customer)->patch(route('pesanan.complete', $order))->assertRedirect();
