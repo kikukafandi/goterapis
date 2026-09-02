@@ -16,7 +16,7 @@ class AdminCategoryController extends Controller
 {
     public function index(): View
     {
-        $categories = Category::terurut()->withCount('services')->get();
+        $categories = Category::terurut()->with('services')->withCount('services')->get();
 
         return view('admin.categories.index', compact('categories'));
     }
@@ -54,6 +54,39 @@ class AdminCategoryController extends Controller
         return back()->with('success', 'Kategori diperbarui.');
     }
 
+    public function storeService(Request $request, Category $category): RedirectResponse
+    {
+        $data = $this->validatedService($request);
+
+        Service::create([
+            ...$data,
+            'slug' => Str::slug($data['name']),
+            'category' => $category->slug,
+        ]);
+
+        return back()->with('success', 'Subkategori ditambahkan.');
+    }
+
+    public function updateService(Request $request, Service $service): RedirectResponse
+    {
+        $service->update($this->validatedService($request, $service));
+
+        return back()->with('success', 'Subkategori diperbarui.');
+    }
+
+    public function destroyService(Service $service): RedirectResponse
+    {
+        if ($service->therapists()->exists()) {
+            throw ValidationException::withMessages([
+                'hapus_layanan' => "Subkategori \"{$service->name}\" masih dipakai terapis.",
+            ]);
+        }
+
+        $service->delete();
+
+        return back()->with('success', 'Subkategori dihapus.');
+    }
+
     public function destroy(Category $category): RedirectResponse
     {
         if (Service::where('category', $category->slug)->exists()) {
@@ -66,6 +99,22 @@ class AdminCategoryController extends Controller
         $category->delete();
 
         return back()->with('success', 'Kategori dihapus.');
+    }
+
+    /** @return array{name: string, allowed_gender: ?string, is_active: bool} */
+    private function validatedService(Request $request, ?Service $service = null): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('services')->ignore($service)],
+            'allowed_gender' => ['nullable', Rule::in(['pria', 'wanita'])],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        return [
+            'name' => $data['name'],
+            'allowed_gender' => $data['allowed_gender'] ?? null,
+            'is_active' => $request->boolean('is_active'),
+        ];
     }
 
     /** @return array{name: string, position: int} */

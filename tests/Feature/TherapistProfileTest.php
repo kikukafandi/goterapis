@@ -73,6 +73,19 @@ class TherapistProfileTest extends TestCase
         $this->assertDatabaseHas('schedules', ['therapist_profile_id' => $profile->id, 'day_of_week' => 1, 'start_time' => '08:00']);
     }
 
+    public function test_form_edit_profil_memiliki_pratinjau_foto(): void
+    {
+        [$user] = $this->therapist();
+
+        $this->actingAs($user)
+            ->get(route('mitra.profil.edit'))
+            ->assertOk()
+            ->assertSee('id="avatar-preview"', false)
+            ->assertSee('URL.createObjectURL(this.files[0])', false)
+            ->assertSee('navigator.geolocation.getCurrentPosition', false)
+            ->assertSee('>Gunakan lokasi perangkat</button>', false);
+    }
+
     public function test_pengguna_biasa_tidak_dapat_membuka_edit_profil_terapis(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'user']))

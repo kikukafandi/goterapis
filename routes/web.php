@@ -196,6 +196,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/kategori', [AdminCategoryController::class, 'store'])->name('categories.store');
     Route::post('/kategori/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
     Route::delete('/kategori/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::post('/kategori/{category}/subkategori', [AdminCategoryController::class, 'storeService'])->name('services.store');
+    Route::put('/subkategori/{service}', [AdminCategoryController::class, 'updateService'])->name('services.update');
+    Route::delete('/subkategori/{service}', [AdminCategoryController::class, 'destroyService'])->name('services.destroy');
 
     Route::get('/laporan', [AdminReportController::class, 'index'])->name('reports.index');
     Route::get('/laporan/{report}', [AdminReportController::class, 'show'])->name('reports.show');

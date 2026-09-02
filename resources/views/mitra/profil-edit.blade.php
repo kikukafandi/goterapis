@@ -11,11 +11,8 @@
     <div class="mx-auto max-w-3xl">
         <h1 class="font-display text-[22px] font-extrabold">Profil</h1>
         <div class="mt-5 flex items-center gap-4">
-            @if ($profile->user->avatarUrl())
-                <img src="{{ $profile->user->avatarUrl() }}" alt="" class="h-[66px] w-[66px] shrink-0 rounded-[22px] object-cover">
-            @else
-                <span class="grid h-[66px] w-[66px] shrink-0 place-items-center rounded-[22px] bg-white/25 text-xl font-extrabold">{{ mb_substr($profile->user->name, 0, 1) }}</span>
-            @endif
+            <img id="avatar-preview" src="{{ $profile->user->avatarUrl() }}" alt="Pratinjau foto profil" class="h-[66px] w-[66px] shrink-0 rounded-[22px] object-cover {{ $profile->user->avatarUrl() ? '' : 'hidden' }}">
+            <span id="avatar-fallback" class="h-[66px] w-[66px] shrink-0 place-items-center rounded-[22px] bg-white/25 text-xl font-extrabold {{ $profile->user->avatarUrl() ? 'hidden' : 'grid' }}">{{ mb_substr($profile->user->name, 0, 1) }}</span>
             <span class="min-w-0 flex-1">
                 <span class="block truncate font-display text-lg font-extrabold">{{ $profile->user->name }}</span>
                 <span class="mt-1 block text-[11px] font-semibold text-white/85">Terapis {{ ucfirst($profile->verification_status) }} · {{ $profile->city }}</span>
@@ -58,7 +55,7 @@
                         @error('code')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
                     </div>
                 @endif
-                <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-arang">Foto profil baru</label><input type="file" name="avatar" accept="image/*" class="w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm"></div>
+                <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-arang">Foto profil baru</label><input type="file" name="avatar" accept="image/*" class="w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm" onchange="if(this.files[0]){document.getElementById('avatar-preview').src=URL.createObjectURL(this.files[0]);document.getElementById('avatar-preview').classList.remove('hidden');document.getElementById('avatar-fallback').classList.add('hidden')}" aria-describedby="avatar-help"><p id="avatar-help" class="mt-1.5 text-xs text-kabut-muda">Foto terpilih akan tampil di pratinjau atas. Maksimum 4 MB.</p>@error('avatar')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror</div>
             </div>
         </section>
 
@@ -81,15 +78,15 @@
                 <label class="flex items-center gap-3 rounded-xl border border-garis p-4 text-sm font-semibold text-arang"><input type="checkbox" name="serves_call" value="1" @checked(old('serves_call', $profile->serves_call)) class="h-4 w-4 accent-daun"> Panggilan ke pelanggan</label>
                 <label class="flex items-center gap-3 rounded-xl border border-garis p-4 text-sm font-semibold text-arang"><input type="checkbox" name="serves_place" value="1" @checked(old('serves_place', $profile->serves_place)) class="h-4 w-4 accent-daun"> Di tempat praktik</label>
                 <x-field name="place_address" label="Alamat tempat praktik" :value="$profile->place_address" class="sm:col-span-2" />
-                <div class="sm:col-span-2 rounded-xl border border-garis bg-kertas p-4" x-data="{ mencari: false, pesan: '' }">
+                <div class="sm:col-span-2 rounded-xl border border-garis bg-kertas p-4">
                     <p class="text-sm font-semibold text-arang">Titik basis layanan</p>
                     <p class="mt-1 text-xs leading-5 text-kabut">Dipakai untuk menghitung jarak pencarian. Lokasi hanya diminta setelah tombol ditekan.</p>
                     <div class="mt-3 grid gap-3 sm:grid-cols-2">
                         <x-field name="service_lat" label="Lintang" type="number" step="any" :value="$profile->service_lat" min="-90" max="90" />
                         <x-field name="service_lng" label="Bujur" type="number" step="any" :value="$profile->service_lng" min="-180" max="180" />
                     </div>
-                    <button type="button" @click="mencari = true; pesan = ''; navigator.geolocation.getCurrentPosition((pos) => { document.querySelector('[name=service_lat]').value = pos.coords.latitude; document.querySelector('[name=service_lng]').value = pos.coords.longitude; mencari = false; pesan = 'Lokasi berhasil diisi.' }, () => { mencari = false; pesan = 'Lokasi tidak dapat diambil. Isi koordinat secara manual.' }, { enableHighAccuracy: true, timeout: 10000 })" class="mt-3 rounded-xl border border-daun px-4 py-3 text-xs font-bold text-daun" :disabled="mencari"><span x-text="mencari ? 'Mengambil lokasi…' : 'Gunakan lokasi perangkat'"></span></button>
-                    <p class="mt-2 text-xs text-kabut" role="status" aria-live="polite" x-text="pesan"></p>
+                    <button type="button" onclick="const tombol=this,pesan=document.getElementById('pesan-lokasi');if(!navigator.geolocation){pesan.textContent='Perangkat ini tidak mendukung pengambilan lokasi.';return}tombol.disabled=true;tombol.textContent='Mengambil lokasi…';pesan.textContent='';navigator.geolocation.getCurrentPosition((pos)=>{document.querySelector('[name=service_lat]').value=pos.coords.latitude;document.querySelector('[name=service_lng]').value=pos.coords.longitude;pesan.textContent='Lokasi berhasil diisi.';tombol.disabled=false;tombol.textContent='Gunakan lokasi perangkat'},()=>{pesan.textContent='Lokasi tidak dapat diambil. Pastikan izin lokasi aktif.';tombol.disabled=false;tombol.textContent='Gunakan lokasi perangkat'},{enableHighAccuracy:true,timeout:10000})" class="mt-3 rounded-xl border border-daun px-4 py-3 text-xs font-bold text-daun disabled:opacity-60">Gunakan lokasi perangkat</button>
+                    <p id="pesan-lokasi" class="mt-2 text-xs text-kabut" role="status" aria-live="polite"></p>
                 </div>
             </div>
         </section>

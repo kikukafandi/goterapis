@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Service;
+use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -36,6 +37,63 @@ class AdminCategoryTest extends TestCase
         $this->assertNotNull($category->iconUrl());
     }
 
+    public function test_admin_mengelola_subkategori_secara_dinamis(): void
+    {
+        $category = Category::where('slug', 'pijat')->firstOrFail();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('admin.services.store', $category), [
+            'name' => 'Pijat Kepala',
+            'allowed_gender' => 'wanita',
+            'is_active' => '1',
+        ])->assertSessionHasNoErrors();
+
+        $service = Service::where('slug', 'pijat-kepala')->firstOrFail();
+        $this->assertSame('pijat', $service->category);
+        $this->assertSame('wanita', $service->allowed_gender);
+        $this->assertTrue($service->is_active);
+
+        $this->actingAs($admin)->put(route('admin.services.update', $service), [
+            'name' => 'Pijat Kepala dan Wajah',
+            'is_active' => '0',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Pijat Kepala dan Wajah', $service->fresh()->name);
+        $this->assertFalse($service->fresh()->is_active);
+
+        $this->actingAs($admin)->delete(route('admin.services.destroy', $service))->assertSessionHasNoErrors();
+        $this->assertModelMissing($service);
+    }
+
+    public function test_subkategori_baru_tampil_di_pendaftaran_terapis(): void
+    {
+        $category = Category::where('slug', 'pijat')->firstOrFail();
+
+        $this->actingAs($this->admin())->post(route('admin.services.store', $category), [
+            'name' => 'Pijat Kepala',
+            'is_active' => '1',
+        ]);
+
+        $this->post(route('logout'));
+        $this->get(route('register.therapist'))->assertOk()->assertSee('Pijat Kepala');
+    }
+
+    public function test_subkategori_yang_dipakai_terapis_tidak_bisa_dihapus(): void
+    {
+        $service = Service::create(['name' => 'Pijat Kepala', 'slug' => 'pijat-kepala', 'category' => 'pijat']);
+        $profile = TherapistProfile::create([
+            'user_id' => User::factory()->create(['role' => 'therapist'])->id,
+            'gender' => 'pria',
+            'city' => 'Yogyakarta',
+        ]);
+        $profile->services()->attach($service, ['price' => 100000, 'duration_min' => 60]);
+
+        $this->actingAs($this->admin())->delete(route('admin.services.destroy', $service))
+            ->assertSessionHasErrors('hapus_layanan');
+
+        $this->assertModelExists($service);
+    }
+
     public function test_kategori_baru_langsung_dipakai_layanan_dan_filter_pencarian(): void
     {
         $this->actingAs($this->admin())->post(route('admin.categories.store'), ['name' => 'Totok Wajah'])
@@ -43,7 +101,6 @@ class AdminCategoryTest extends TestCase
 
         $this->get(route('home'))->assertOk()->assertSee('Totok Wajah');
 
-        // Kolom services.category dulu berupa enum; kategori baru mustahil dipakai tanpa migrasi.
         Service::create(['name' => 'Totok Aura', 'slug' => 'totok-aura', 'category' => 'totok-wajah', 'is_active' => true]);
 
         $this->get(route('cari', ['kategori' => 'totok-wajah']))->assertOk()->assertSee('Totok Wajah');
@@ -118,7 +175,6 @@ class AdminCategoryTest extends TestCase
     public function test_bukan_admin_dilarang_mengelola_kategori(): void
     {
         $this->actingAs(User::factory()->create())->get(route('admin.categories.index'))->assertRedirect(route('home'));
-        // Middleware admin menolak duluan, jadi tamu pun dipulangkan ke beranda.
         $this->post(route('admin.categories.store'), ['name' => 'Bebas'])->assertRedirect(route('home'));
         $this->assertDatabaseMissing('categories', ['name' => 'Bebas']);
     }
