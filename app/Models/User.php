@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'blocked_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'tutorial_seen_at' => 'datetime',
             'legal_accepted_at' => 'datetime',
             'password' => 'hashed',
@@ -62,8 +64,39 @@ class User extends Authenticatable
             : Storage::url($this->avatar_path);
     }
 
+    public function isBlocked(): bool
+    {
+        return $this->blocked_at !== null || $this->deactivated_at !== null || $this->activeBan()->exists();
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('blocked_at')->whereNull('deactivated_at')->whereDoesntHave('bans', fn ($query) => $query
+            ->whereNull('unbanned_at')
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now())));
+    }
+
     public function therapistProfile(): HasOne
     {
         return $this->hasOne(TherapistProfile::class);
+    }
+
+    public function deactivationRequests(): HasMany
+    {
+        return $this->hasMany(DeactivationRequest::class);
+    }
+
+    public function bans(): HasMany
+    {
+        return $this->hasMany(UserBan::class);
+    }
+
+    public function activeBan(): HasOne
+    {
+        return $this->hasOne(UserBan::class)->ofMany([
+            'id' => 'max',
+        ], fn ($query) => $query
+            ->whereNull('unbanned_at')
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now())));
     }
 }

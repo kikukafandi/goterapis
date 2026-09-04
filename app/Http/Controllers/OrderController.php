@@ -96,6 +96,7 @@ class OrderController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($data['therapist_profile_id']);
             abort_if($therapist->user_id === $request->user()->id, 403);
+            abort_unless($therapist->user()->active()->exists(), 404);
             abort_unless($therapist->isBookableBy($request->user()), 403, 'Terapis ini hanya melayani pelanggan dengan jenis kelamin yang sama.');
 
             $service = $therapist->services()->availableTo($therapist->gender)->where('services.id', $data['service_id'])->first();

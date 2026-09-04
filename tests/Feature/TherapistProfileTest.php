@@ -81,7 +81,8 @@ class TherapistProfileTest extends TestCase
             ->get(route('mitra.profil.edit'))
             ->assertOk()
             ->assertSee('id="avatar-preview"', false)
-            ->assertSee('URL.createObjectURL(this.files[0])', false)
+            ->assertSee('id="avatar-input-preview"', false)
+            ->assertSee('reader.readAsDataURL(this.files[0])', false)
             ->assertSee('navigator.geolocation.getCurrentPosition', false)
             ->assertSee('>Gunakan lokasi perangkat</button>', false);
     }

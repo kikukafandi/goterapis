@@ -18,6 +18,7 @@
     $antreanDokumen = \App\Models\TherapistDocument::where('status', 'pending')->count();
     $antreanPenarikan = \App\Models\Withdrawal::where('status', 'requested')->count();
     $antreanLaporan = \App\Models\Report::whereIn('status', ['open', 'reviewing'])->count();
+    $antreanPenonaktifan = \App\Models\DeactivationRequest::where('status', 'pending')->count();
 
     $beranda = ['label' => 'Dashboard', 'href' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard'), 'icon' => 'home'];
 
@@ -25,6 +26,8 @@
     $klaster = [
         ['label' => 'Mitra', 'items' => [
             ['label' => 'Terapis', 'href' => route('admin.therapists'), 'active' => request()->routeIs('admin.therapist*'), 'icon' => 'user', 'count' => $antreanDokumen],
+            ['label' => 'Pengguna', 'href' => route('admin.users.index'), 'active' => request()->routeIs('admin.users.*'), 'icon' => 'user'],
+            ['label' => 'Penonaktifan', 'href' => route('admin.deactivations.index'), 'active' => request()->routeIs('admin.deactivations.*'), 'icon' => 'shield', 'count' => $antreanPenonaktifan],
             ['label' => 'Laporan', 'href' => route('admin.reports.index'), 'active' => request()->routeIs('admin.reports.*'), 'icon' => 'shield', 'count' => $antreanLaporan],
         ]],
         ['label' => 'Keuangan', 'items' => [

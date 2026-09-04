@@ -21,15 +21,19 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (! Auth::attempt([...$data, 'blocked_at' => null], $request->boolean('remember'))) {
+        if (! Auth::attempt($data, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'Email atau kata sandi salah.',
             ]);
         }
 
-        $request->session()->regenerate();
-
         $user = Auth::user();
+        if ($user->isBlocked()) {
+            Auth::logout();
+            throw ValidationException::withMessages(['email' => 'Akun Anda tidak aktif atau sedang diblokir.']);
+        }
+
+        $request->session()->regenerate();
 
         return $user->role !== 'admin' && $user->tutorial_seen_at === null
             ? redirect()->route('tutorial')

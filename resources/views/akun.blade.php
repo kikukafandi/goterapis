@@ -73,6 +73,23 @@
         @endforeach
     </div>
 
+    @if ($user->isTherapist())
+        @php($pendingDeactivation = $user->deactivationRequests()->where('status', 'pending')->exists())
+        <div class="kartu p-5">
+            <h2 class="font-display text-base font-bold text-arang">Nonaktifkan akun mitra</h2>
+            @if ($pendingDeactivation)
+                <p class="mt-2 text-sm text-kabut">Permintaanmu sedang ditinjau. Akun tetap aktif sampai admin menyetujuinya.</p>
+            @else
+                <form method="post" action="{{ route('deactivation-requests.store') }}" class="mt-3 space-y-3">
+                    @csrf
+                    <textarea name="reason" rows="3" maxlength="1000" placeholder="Alasan (opsional)" class="w-full rounded-xl border border-garis bg-kertas-isian p-3 text-sm text-arang placeholder:text-kabut-samar">{{ old('reason') }}</textarea>
+                    @error('reason')<p class="text-xs font-semibold text-jahe">{{ $message }}</p>@enderror
+                    <button class="btn-garis w-full text-sm">Ajukan penonaktifan</button>
+                </form>
+            @endif
+        </div>
+    @endif
+
     <form method="post" action="{{ route('logout') }}">
         @csrf
         <button class="btn-garis w-full text-sm">Keluar</button>

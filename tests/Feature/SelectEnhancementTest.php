@@ -22,7 +22,7 @@ class SelectEnhancementTest extends TestCase
 
         $javascript = file_get_contents(resource_path('js/app.js'));
 
-        $this->assertCount(12, $selects);
+        $this->assertCount(15, $selects);
         $this->assertEmpty(array_filter($selects, fn (string $select): bool => str_contains($select, 'multiple')));
         $this->assertStringContainsString('select:not([multiple]):not([data-native-select])', $javascript);
         $this->assertStringContainsString("dispatchEvent(new Event('change', { bubbles: true }))", $javascript);

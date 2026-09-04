@@ -41,7 +41,7 @@ class CariController extends Controller
             ->eligible()
             ->with(['user', 'services' => fn ($query) => $query->where('is_active', true)])
             ->where('is_available', true)
-            ->whereHas('user', fn ($query) => $query->whereNull('blocked_at'))
+            ->whereHas('user', fn ($query) => $query->active())
             ->addSelect(['starting_price' => DB::table('therapist_service')->selectRaw('MIN(price)')->whereColumn('therapist_profile_id', 'therapist_profiles.id')])
             ->when($kota && $latitude === null, fn ($query) => $query->where('city', $kota))
             ->when($gender, fn ($query) => $query->where('gender', $gender))
@@ -80,7 +80,7 @@ class CariController extends Controller
 
     public function show(TherapistProfile $therapist)
     {
-        abort_if(! $therapist->is_available || ! $therapist->isEligible(), 404);
+        abort_if(! $therapist->is_available || ! $therapist->isEligible() || ! $therapist->user()->active()->exists(), 404);
         $therapist->load(['user', 'services' => fn ($query) => $query->where('is_active', true), 'schedules', 'reviews.user']);
 
         return view('terapis', compact('therapist'));

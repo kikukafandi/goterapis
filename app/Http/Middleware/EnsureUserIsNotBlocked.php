@@ -11,7 +11,7 @@ class EnsureUserIsNotBlocked
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->blocked_at !== null) {
+        if ($request->user()?->isBlocked()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

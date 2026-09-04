@@ -55,7 +55,15 @@
                         @error('code')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
                     </div>
                 @endif
-                <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-semibold text-arang">Foto profil baru</label><input type="file" name="avatar" accept="image/*" class="w-full rounded-xl border border-garis bg-white px-3 py-2.5 text-sm" onchange="if(this.files[0]){document.getElementById('avatar-preview').src=URL.createObjectURL(this.files[0]);document.getElementById('avatar-preview').classList.remove('hidden');document.getElementById('avatar-fallback').classList.add('hidden')}" aria-describedby="avatar-help"><p id="avatar-help" class="mt-1.5 text-xs text-kabut-muda">Foto terpilih akan tampil di pratinjau atas. Maksimum 4 MB.</p>@error('avatar')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror</div>
+                <div class="sm:col-span-2">
+                    <label class="mb-1.5 block text-sm font-semibold text-arang">Foto profil baru</label>
+                    <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        <img id="avatar-input-preview" src="{{ $profile->user->avatarUrl() }}" alt="Pratinjau foto profil baru" class="h-20 w-20 shrink-0 rounded-[22px] object-cover {{ $profile->user->avatarUrl() ? '' : 'hidden' }}">
+                        <input type="file" name="avatar" accept="image/*" class="w-full min-w-0 rounded-xl border border-garis bg-white px-3 py-2.5 text-sm sm:flex-1" onchange="if(this.files[0]){const reader=new FileReader();reader.onload=()=>{document.getElementById('avatar-preview').src=reader.result;document.getElementById('avatar-preview').classList.remove('hidden');document.getElementById('avatar-input-preview').src=reader.result;document.getElementById('avatar-input-preview').classList.remove('hidden');document.getElementById('avatar-fallback').classList.add('hidden')};reader.readAsDataURL(this.files[0])}" aria-describedby="avatar-help">
+                    </div>
+                    <p id="avatar-help" class="mt-1.5 text-xs text-kabut-muda">Foto terpilih akan langsung tampil di samping. Maksimum 4 MB.</p>
+                    @error('avatar')<p class="mt-1.5 text-xs font-medium text-jahe">{{ $message }}</p>@enderror
+                </div>
             </div>
         </section>
 

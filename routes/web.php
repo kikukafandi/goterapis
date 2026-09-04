@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDeactivationRequestController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminPromotionBannerController;
 use App\Http\Controllers\AdminReportController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\AdminShopOrderController;
 use App\Http\Controllers\AdminTherapistDocumentController;
 use App\Http\Controllers\AdminTransactionController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminWhatsAppController;
 use App\Http\Controllers\AdminWithdrawalController;
 use App\Http\Controllers\ArticleController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\TherapistRegisterController;
 use App\Http\Controllers\CariController;
 use App\Http\Controllers\ChatMessageController;
+use App\Http\Controllers\DeactivationRequestController;
 use App\Http\Controllers\JurnalController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocalSeoController;
@@ -49,7 +52,7 @@ Route::get('/', function () {
     $therapists = TherapistProfile::query()
         ->eligible()
         ->where('is_available', true)
-        ->whereHas('user', fn ($query) => $query->whereNull('blocked_at'))
+        ->whereHas('user', fn ($query) => $query->active())
         ->with(['user', 'services' => fn ($query) => $query->where('is_active', true)])
         ->when(auth()->user()?->gender, fn ($query, $gender) => $query->where('gender', $gender))
         ->orderByDesc('is_featured')
@@ -122,6 +125,7 @@ Route::post('/daftar-terapis', [TherapistRegisterController::class, 'register'])
 // Pemesanan (butuh login; guest diarahkan ke /masuk oleh middleware auth)
 Route::middleware('auth')->group(function () {
     Route::view('/akun', 'akun')->name('akun');
+    Route::post('/akun/penonaktifan', [DeactivationRequestController::class, 'store'])->name('deactivation-requests.store');
     Route::get('/tutorial', TutorialController::class)->name('tutorial');
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
@@ -182,6 +186,11 @@ Route::middleware(['auth', 'therapist'])->prefix('mitra')->name('mitra.')->group
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/whatsapp', AdminWhatsAppController::class)->name('whatsapp');
+    Route::get('/pengguna', [AdminUserController::class, 'index'])->name('users.index');
+    Route::post('/pengguna/{user}/blokir', [AdminUserController::class, 'ban'])->name('users.ban');
+    Route::patch('/pengguna/{user}/buka-blokir', [AdminUserController::class, 'unban'])->name('users.unban');
+    Route::get('/penonaktifan', [AdminDeactivationRequestController::class, 'index'])->name('deactivations.index');
+    Route::patch('/penonaktifan/{deactivationRequest}', [AdminDeactivationRequestController::class, 'update'])->name('deactivations.update');
     Route::get('/transaksi', [AdminTransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaksi/{payment}', [AdminTransactionController::class, 'show'])->name('transactions.show');
     Route::post('/transaksi/{payment}/refund', [AdminTransactionController::class, 'retryRefund'])->name('transactions.retry-refund');

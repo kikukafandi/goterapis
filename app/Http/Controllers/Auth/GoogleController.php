@@ -29,6 +29,9 @@ class GoogleController extends Controller
         }
 
         if ($user = User::where('google_id', $googleUser->getId())->first()) {
+            if ($user->isBlocked()) {
+                return redirect()->route('login')->withErrors(['email' => 'Akun Anda tidak aktif atau sedang diblokir.']);
+            }
             Auth::login($user);
             $request->session()->regenerate();
 

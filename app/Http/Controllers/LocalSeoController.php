@@ -52,7 +52,7 @@ class LocalSeoController extends Controller
 
     private function eligible(): Builder
     {
-        return TherapistProfile::query()->eligible()->where('is_available', true)->whereNotNull('city')->where('city', '!=', '')->whereHas('user', fn ($query) => $query->whereNull('blocked_at'));
+        return TherapistProfile::query()->eligible()->where('is_available', true)->whereNotNull('city')->where('city', '!=', '')->whereHas('user', fn ($query) => $query->active());
     }
 
     private function combinations()
