@@ -11,8 +11,9 @@ class BadgeTest extends TestCase
     {
         $html = Blade::render('<x-badge status="pilihan" />');
 
-        $this->assertStringContainsString('badge_terapis_pilihan.webp', $html);
-        $this->assertStringContainsString('Terapis Pilihan', $html); // title/alt
+        $this->assertStringContainsString('images/badges/badge_terapis_pilihan.webp', $html);
+        $this->assertStringContainsString('Terapis Pilihan', $html);
+        $this->assertFileExists(public_path('images/badges/badge_terapis_pilihan.webp'));
     }
 
     public function test_label_is_resolved_to_the_same_badge(): void

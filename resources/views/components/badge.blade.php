@@ -6,7 +6,6 @@
 @php
     $labels = \App\Models\TherapistProfile::STATUS_LABELS;
 
-    // Berkas badge yang diunggah pengguna (storage/app/public).
     $badges = [
         'anggota' => 'badge_anggota_kumitas.webp',
         'identitas' => 'badge_identitas_verifikasi.webp',
@@ -22,6 +21,6 @@
 @endphp
 
 @if ($file)
-    <img src="{{ asset('storage/'.$file) }}" alt="{{ $label }}" title="{{ $label }}" loading="lazy"
+    <img src="{{ asset('images/badges/'.$file) }}" alt="{{ $label }}" title="{{ $label }}" loading="lazy"
          {{ $attributes->merge(['class' => $size.' inline-block shrink-0 object-contain align-middle']) }}>
 @endif
