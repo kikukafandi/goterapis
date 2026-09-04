@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('partials.footer', fn ($view) => $view->with(
             'footerCategories',
-            Category::terurut()->limit(5)->pluck('name', 'slug'),
+            Category::terurut()->pluck('name', 'slug'),
         ));
 
         if ($this->app->environment('production')) {

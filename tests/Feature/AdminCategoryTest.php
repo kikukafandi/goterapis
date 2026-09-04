@@ -118,13 +118,12 @@ class AdminCategoryTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('Kategori 9')
-            ->assertDontSee('Kategori 10')
-            ->assertDontSee('Kategori 11')
+            ->assertViewHas('categories', fn ($categories) => $categories->pluck('name')->all() === array_map(fn ($position) => "Kategori {$position}", range(1, 9)))
+            ->assertViewHas('hasMoreCategories', true)
             ->assertSee('Lainnya');
     }
 
-    public function test_footer_menampilkan_lima_kategori_pertama_sesuai_urutan_admin(): void
+    public function test_footer_menampilkan_semua_kategori_sesuai_urutan_admin(): void
     {
         Category::query()->delete();
 
@@ -134,11 +133,10 @@ class AdminCategoryTest extends TestCase
 
         $footer = view('partials.footer')->render();
 
-        $positions = array_map(fn ($position) => strpos($footer, "Kategori {$position}"), range(1, 5));
+        $positions = array_map(fn ($position) => strpos($footer, "Kategori {$position}"), range(1, 6));
 
         $this->assertSame($positions, collect($positions)->sort()->values()->all());
         $this->assertNotContains(false, $positions);
-        $this->assertStringNotContainsString('Kategori 6', $footer);
         $this->assertStringContainsString(route('cari', ['kategori' => 'kategori-1']), $footer);
     }
 
