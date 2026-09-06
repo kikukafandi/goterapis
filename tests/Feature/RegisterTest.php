@@ -123,6 +123,45 @@ class RegisterTest extends TestCase
         }
     }
 
+    public function test_therapist_registration_requires_price_and_duration_for_each_selected_service(): void
+    {
+        Storage::fake('public');
+        Storage::fake('local');
+
+        $service = Service::create(['name' => 'Pijat Tradisional', 'slug' => 'pijat-tradisional', 'category' => 'pijat']);
+        $registration = [
+            'name' => 'Siti Terapis',
+            'email' => 'siti-validasi@example.com',
+            'phone' => '081200000001',
+            'password' => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+            'gender' => 'wanita',
+            'experience_years' => 5,
+            'province' => 'Jawa Barat',
+            'city' => 'Bandung',
+            'serves_call' => '1',
+            'services' => [$service->id],
+            'price' => [$service->id => 0],
+            'duration' => [$service->id => 60],
+            'ktp' => UploadedFile::fake()->image('ktp.jpg'),
+            'avatar' => UploadedFile::fake()->image('foto.jpg'),
+            'legal_accepted' => '1',
+        ];
+
+        $this->from('/daftar-terapis')->post('/daftar-terapis', $registration)
+            ->assertRedirect('/daftar-terapis')
+            ->assertSessionHasErrors("price.{$service->id}");
+
+        $registration['price'] = [999 => 80000];
+        $registration['duration'] = [999 => 60];
+
+        $this->from('/daftar-terapis')->post('/daftar-terapis', $registration)
+            ->assertRedirect('/daftar-terapis')
+            ->assertSessionHasErrors('services');
+
+        $this->assertDatabaseMissing('users', ['email' => 'siti-validasi@example.com']);
+    }
+
     public function test_therapist_can_view_verification_status(): void
     {
         $therapist = User::factory()->create(['role' => 'therapist']);
@@ -166,6 +205,8 @@ class RegisterTest extends TestCase
             'province' => 'Jawa Barat',
             'city' => 'Bandung',
             'services' => [$service->id],
+            'price' => [$service->id => 80000],
+            'duration' => [$service->id => 60],
             'ktp' => UploadedFile::fake()->image('ktp.jpg'),
             'avatar' => UploadedFile::fake()->image('foto.jpg'),
             'legal_accepted' => '1',

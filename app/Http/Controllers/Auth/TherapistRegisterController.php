@@ -71,10 +71,10 @@ class TherapistRegisterController extends Controller
             // Layanan terpilih + harga
             'services' => ['required', 'array', 'min:1'],
             'services.*' => ['integer', 'exists:services,id'],
-            'price' => ['array'],
-            'price.*' => ['nullable', 'integer', 'min:0'],
-            'duration' => ['array'],
-            'duration.*' => ['nullable', 'integer', 'min:15', 'max:480'],
+            'price' => ['required', 'array'],
+            'price.*' => ['required', 'integer', 'min:1'],
+            'duration' => ['required', 'array'],
+            'duration.*' => ['required', 'integer', 'min:15', 'max:480'],
             // Dokumen
             'ktp' => ['required', 'image', 'max:4096'],
             'avatar' => ['required', 'image', 'max:4096'],
@@ -98,6 +98,12 @@ class TherapistRegisterController extends Controller
         $eligibleServiceIds = Service::availableTo($data['gender'])->whereIn('id', $data['services'])->pluck('id');
         if ($eligibleServiceIds->count() !== count(array_unique($data['services']))) {
             return back()->withInput()->withErrors(['services' => 'Pilihan layanan tidak tersedia untuk profilmu.']);
+        }
+
+        foreach ($data['services'] as $serviceId) {
+            if (! array_key_exists($serviceId, $data['price']) || ! array_key_exists($serviceId, $data['duration'])) {
+                return back()->withInput()->withErrors(['services' => 'Isi harga dan durasi untuk setiap layanan yang dipilih.']);
+            }
         }
 
         $profile = DB::transaction(function () use ($request, $data, $akun) {
@@ -150,8 +156,8 @@ class TherapistRegisterController extends Controller
             $attach = [];
             foreach ($data['services'] as $serviceId) {
                 $attach[$serviceId] = [
-                    'price' => $data['price'][$serviceId] ?? 0,
-                    'duration_min' => $data['duration'][$serviceId] ?? 60,
+                    'price' => $data['price'][$serviceId],
+                    'duration_min' => $data['duration'][$serviceId],
                 ];
             }
             $profile->services()->attach($attach);

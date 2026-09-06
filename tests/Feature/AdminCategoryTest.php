@@ -120,6 +120,7 @@ class AdminCategoryTest extends TestCase
             ->assertOk()
             ->assertViewHas('categories', fn ($categories) => $categories->pluck('name')->all() === array_map(fn ($position) => "Kategori {$position}", range(1, 9)))
             ->assertViewHas('hasMoreCategories', true)
+            ->assertSee('sm:grid-cols-3', false)
             ->assertSee('Lainnya');
     }
 

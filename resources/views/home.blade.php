@@ -40,17 +40,17 @@
             <h2 class="font-display text-[26px] font-extrabold text-arang">Kategori layanan</h2>
             <a href="{{ route('cari') }}" class="text-[13px] font-bold text-daun">Lihat semua</a>
         </div>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-center">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:gap-5">
             @foreach ($categories as $category)
-                <a href="{{ route('cari', ['kategori' => $category->slug]) }}" class="flex flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center hover:border-daun-terang lg:w-[calc((100%-3rem)/5)]">
+                <a href="{{ route('cari', ['kategori' => $category->slug]) }}" class="flex h-full flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center transition-colors hover:border-daun-garis hover:bg-daun-muda/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-daun">
                     <span class="h-[62px] w-[62px] overflow-hidden rounded-full bg-garis-muda"><x-cat-icon :slug="$category->slug" :src="$category->iconUrl()" class="h-full w-full" /></span>
-                    <span class="text-[13px] font-semibold text-arang">{{ $category->name }}</span>
+                    <span class="text-[13px] font-semibold leading-snug text-arang">{{ $category->name }}</span>
                 </a>
             @endforeach
             @if ($hasMoreCategories)
-                <a href="{{ route('cari') }}" class="flex flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center hover:border-daun-terang lg:w-[calc((100%-3rem)/5)]">
+                <a href="{{ route('cari') }}" class="flex h-full flex-col items-center gap-3 rounded-card border border-garis bg-white px-3 py-5 text-center transition-colors hover:border-daun-garis hover:bg-daun-muda/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-daun">
                     <span class="grid h-[62px] w-[62px] place-items-center rounded-full bg-daun-muda"><x-icon name="plus" class="h-7 w-7 text-daun" /></span>
-                    <span class="text-[13px] font-semibold text-arang">Lainnya</span>
+                    <span class="text-[13px] font-semibold leading-snug text-arang">Lainnya</span>
                 </a>
             @endif
         </div>
